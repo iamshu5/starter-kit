@@ -1,0 +1,37 @@
+Step-by-Step: Tambah Halaman Baru & Menu/Sub Menu
+
+A. Backend — Tambah Route
+Edit api.php:
+<?php
+Route::apiResource('products', ProductController::class);
+
+B. Frontend — Tambah Halaman
+1. Buat file frontend/src/features/products/pages/ProductsPage.jsx
+2. Import dan daftarkan di src/App.jsx:
+import { ProductsPage } from '@/features/products/pages/ProductsPage'
+
+// Di dalam <Route element={<PermittedRoute />}>:
+<Route path="/products" element={<ProductsPage />} />
+
+3. Tambahkan title di src/layouts/AppLayout.jsx:
+const titles = { ..., '/products': 'Products' }
+
+4. Tambah data Permission di database (opsional — jika pakai permission guard).
+
+POST /api/permissions
+{ "name": "View Products", "slug": "products.view" }
+
+C. Tambah Menu/Sub Menu via Admin Panel
+Login → buka halaman Menus
+Klik Add Menu:
+Name: Products
+Slug: products
+Route: /products
+Parent Menu: — Top Level — (atau pilih parent kalo mau jadi sub-menu)
+Order: nomor urut tampilan
+Icon: paste SVG dari heroicons.com
+Buka halaman Roles, klik ikon ⚙ pada role yang diinginkan -> tab Menus -> centang menu baru -> Save Menus.
+
+Melihat menu Products di sidebar
+Bisa mengakses /products (karena PermittedRoute cek dari sidebar API)
+User lain yang rolenya tidak dapat menu Products → redirect ke /dashboard
