@@ -9,8 +9,9 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { UserForm } from '../components/UserForm'
+import { UserForm } from '@/features/users/components/UserForm'
 import { useDebounce } from '@/hooks/useDebounce'
+import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
 
@@ -25,7 +26,7 @@ export function UsersPage() {
 
   const debouncedSearch = useDebounce(search, 400)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['users', { page, search: debouncedSearch, sortBy, sortDir }],
     queryFn: () => usersApi.list({ page, search: debouncedSearch, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
     placeholderData: keepPreviousData,
@@ -47,7 +48,7 @@ export function UsersPage() {
       return res
     },
     onSuccess: () => { toast.success('User created.'); qc.invalidateQueries({ queryKey: ['users'] }); setModal(null) },
-    onError:   (e) => toast.error(e.response?.data?.message || e.message || 'Failed to create user.'),
+    onError:   (e) => toast.error(toastMsg(e)),
   })
 
   const updateMutation = useMutation({
@@ -58,14 +59,16 @@ export function UsersPage() {
       return res
     },
     onSuccess: () => { toast.success('User updated.'); qc.invalidateQueries({ queryKey: ['users'] }); setModal(null) },
-    onError:   (e) => toast.error(e.response?.data?.message || e.message || 'Failed to update user.'),
+    onError:   (e) => toast.error(toastMsg(e)),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id) => usersApi.remove(id),
     onSuccess: () => { toast.success('User deleted.'); qc.invalidateQueries({ queryKey: ['users'] }); setDeleting(null) },
-    onError:   (e) => toast.error(e.response?.data?.message || e.message || 'Failed to delete user.'),
+    onError:   (e) => toast.error(toastMsg(e)),
   })
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   const columns = useMemo(() => [
     col.accessor('name', {
@@ -109,11 +112,15 @@ export function UsersPage() {
 
   return (
     <div>
+      {isMutating && (
+        <div className="fixed inset-0 z-60 cursor-wait" />
+      )}
+
       <PageHeader
         title="Users"
         subtitle="Manage users dan role"
         actions={
-          <Button onClick={() => setModal({ mode: 'create' })}>
+          <Button onClick={() => setModal({ mode: 'create' })} disabled={isMutating}>
             <Plus size={12} /> Add User
           </Button>
         }
@@ -133,11 +140,24 @@ export function UsersPage() {
           </div>
         </div>
 
-        <DataTable columns={columns} data={data?.data || []} loading={isLoading} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-        <Pagination meta={data?.meta} onPageChange={setPage} />
+        {isError
+          ? <div className="py-10 text-center text-[12px] text-[#e05252]">Gagal memuat data. Silakan muat ulang halaman.</div>
+          : <>
+              <DataTable
+                columns={columns}
+                data={data?.data || []}
+                loading={isLoading}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={handleSort}
+                rowOffset={(page - 1) * 15}
+                mutating={isMutating}
+              />
+              <Pagination meta={data?.meta} onPageChange={setPage} disabled={isMutating} />
+            </>}
       </div>
 
-      {/* Create / Edit Modal — rendered only when open to avoid stale form state */}
+      {/* Create / Edit Modal*/}
       {modal && (
         <Modal
           open
@@ -159,7 +179,7 @@ export function UsersPage() {
         </Modal>
       )}
 
-      {/* Delete confirm */}
+      {/* Delete */}
       {deleting && (
         <Modal
           open

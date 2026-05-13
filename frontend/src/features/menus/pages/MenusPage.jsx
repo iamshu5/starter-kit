@@ -10,20 +10,21 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { SvgIcon } from '@/components/ui/SvgIcon'
-import { MenuForm } from '../components/MenuForm'
+import { MenuForm } from '@/features/menus/components/MenuForm'
+import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
 
 export function MenusPage() {
   const qc = useQueryClient()
-  const [page, setPage]         = useState(1)
-  const [search, setSearch]     = useState('')
-  const [sortBy, setSortBy]     = useState('order')
-  const [sortDir, setSortDir]   = useState('asc')
-  const [modal, setModal]       = useState(null)
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('order')
+  const [sortDir, setSortDir] = useState('asc')
+  const [modal, setModal] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['menus', 'list', { page, search, sortBy, sortDir }],
     queryFn: () => menusApi.list({ page, search: search || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
     placeholderData: keepPreviousData,
@@ -45,7 +46,7 @@ export function MenusPage() {
       return res
     },
     onSuccess: () => { toast.success('Menu created.'); qc.invalidateQueries({ queryKey: ['menus'] }); setModal(null) },
-    onError: (e) => toast.error(e.response?.data?.message || e.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   const updateMutation = useMutation({
@@ -54,18 +55,20 @@ export function MenusPage() {
       return res
     },
     onSuccess: () => { toast.success('Menu updated.'); qc.invalidateQueries({ queryKey: ['menus'] }); setModal(null) },
-    onError: (e) => toast.error(e.response?.data?.message || e.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id) => menusApi.remove(id),
     onSuccess: () => { toast.success('Menu deleted.'); qc.invalidateQueries({ queryKey: ['menus'] }); setDeleting(null) },
-    onError: (e) => toast.error(e.response?.data?.message || e.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   const columns = useMemo(() => [
     col.accessor('order', {
-      header: '#',
+      header: 'Urutan',
       cell: (i) => <span className="font-mono text-[11px] text-[#9aa0b8]">{i.getValue()}</span>,
     }),
     col.accessor('icon', {
@@ -115,11 +118,15 @@ export function MenusPage() {
 
   return (
     <div>
+      {isMutating && (
+        <div className="fixed inset-0 z-60 cursor-wait" />
+      )}
+
       <PageHeader
         title="Menus"
         subtitle="Manage Menu Sidebar"
         actions={
-          <Button onClick={() => setModal({ mode: 'create' })}>
+          <Button onClick={() => setModal({ mode: 'create' })} disabled={isMutating}>
             <Plus size={12} /> Add Menu
           </Button>
         }
@@ -137,8 +144,21 @@ export function MenusPage() {
             />
           </div>
         </div>
-        <DataTable columns={columns} data={data?.data || []} loading={isLoading} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-        <Pagination meta={data?.meta} onPageChange={setPage} />
+        {isError
+          ? <div className="py-10 text-center text-[12px] text-[#e05252]">Gagal memuat data. Silakan muat ulang halaman.</div>
+          : <>
+              <DataTable
+                columns={columns}
+                data={data?.data || []}
+                loading={isLoading}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={handleSort}
+                rowOffset={(page - 1) * 15}
+                mutating={isMutating}
+              />
+              <Pagination meta={data?.meta} onPageChange={setPage} disabled={isMutating} />
+            </>}
       </div>
 
       {modal && (

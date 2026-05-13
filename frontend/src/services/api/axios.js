@@ -22,7 +22,6 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
     }
     if (error.response?.status === 403) {
       error.message = error.response?.data?.message || 'Anda tidak memiliki akses untuk melakukan action ini!'

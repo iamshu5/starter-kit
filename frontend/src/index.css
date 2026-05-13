@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap") layer(base);
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-*: initial;
   --font-sans: "DM Sans", sans-serif;
@@ -32,4 +34,58 @@
 
 @utility menu-item-inactive {
   @apply text-gray-700 hover:bg-gray-100;
+}
+
+/* Dark Mode */
+.dark body { background-color: #0f172a; color: #e2e8f0; }
+
+/* Card / panel putih */
+.dark .bg-white { background-color: #1e293b !important; }
+
+/* Page background */
+.dark .bg-\[\#f0f2f7\] { background-color: #0f172a !important; }
+
+/* Input readonly / icon container bg */
+.dark .bg-\[\#f7f8fc\] { background-color: #162032 !important; }
+
+/* Accent backgrounds */
+.dark .bg-navy-light { background-color: #1a2e47 !important; }
+.dark .bg-gold-light { background-color: #2a2110 !important; }
+.dark .bg-\[\#e6f5ed\] { background-color: #0d2118 !important; }
+.dark .bg-\[\#e8f0fd\] { background-color: #0d1b30 !important; }
+
+/* Border warna kustom */
+.dark .border-\[\#dde2ee\] { border-color: #334155 !important; }
+
+/* Teks kustom — ubah ke warna terang di dark mode */
+.dark .text-\[\#1a1f2e\] { color: #e2e8f0 !important; }
+.dark .text-\[\#3a4060\] { color: #cbd5e1 !important; }
+.dark .text-\[\#5a6380\] { color: #94a3b8 !important; }
+.dark .text-\[\#9aa0b8\] { color: #64748b !important; }
+.dark .text-navy { color: #7ba7e8 !important; }
+
+/* Form inputs */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569 !important; }
+
+@keyframes auth-spin-cw  { to { transform: rotate(360deg); } }
+@keyframes auth-spin-ccw { to { transform: rotate(-360deg); } }
+@keyframes auth-float-6  {
+  0%, 100% { transform: rotate(6deg) translateY(0); }
+  50%       { transform: rotate(6deg) translateY(-10px); }
+}
+@keyframes auth-float-n6 {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50%       { transform: rotate(-6deg) translateY(-10px); }
+}
+@keyframes auth-bg-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
 }

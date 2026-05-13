@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { menusApi } from '@/services/api/menus'
 
@@ -49,7 +50,7 @@ export function GuestRoute() {
 export function PermittedRoute() {
   const { pathname } = useLocation()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['sidebar'],
     queryFn: () => menusApi.sidebar().then((r) => r.data.data),
     staleTime: 0,
@@ -57,9 +58,12 @@ export function PermittedRoute() {
 
   if (isLoading) return <HydrationLoader />
 
+  if (isError) return null
+
   const allowedRoutes = getAllRoutes(data || []).filter(Boolean)
 
   if (!allowedRoutes.includes(pathname)) {
+    toast.error('Anda tidak memiliki izin untuk mengakses halaman tersebut!', { id: 'forbidden-route' })
     return <Navigate to="/dashboard" replace />
   }
 

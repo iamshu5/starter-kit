@@ -24,9 +24,9 @@ function StatCard({ icon: Icon, label, value, color = 'navy' }) {
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
 
-  const { data: users }   = useQuery({ queryKey: ['users', { per_page: 1 }],   queryFn: () => usersApi.list({ per_page: 1 }).then((r) => r.data) })
-  const { data: roles }   = useQuery({ queryKey: ['roles'],   queryFn: () => rolesApi.list().then((r) => r.data) })
-  const { data: menus }   = useQuery({ queryKey: ['menus'],   queryFn: () => menusApi.flat().then((r) => r.data) })
+  const { data: users } = useQuery({ queryKey: ['users', { per_page: 1 }], queryFn: () => usersApi.list({ per_page: 1 }).then((r) => r.data) })
+  const { data: roles } = useQuery({ queryKey: ['roles'], queryFn: () => rolesApi.list().then((r) => r.data) })
+  const { data: menus } = useQuery({ queryKey: ['menus'], queryFn: () => menusApi.flat().then((r) => r.data) })
 
   return (
     <div>
@@ -36,10 +36,10 @@ export function DashboardPage() {
       />
 
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <StatCard icon={Users}           label="Total Users"   value={users?.meta?.total}            color="navy" />
-        <StatCard icon={Shield}          label="Total Roles"   value={roles?.data?.length}           color="gold" />
-        <StatCard icon={Menu}            label="Total Menus"   value={menus?.data?.length}           color="green" />
-        <StatCard icon={LayoutDashboard} label="Active"        value="Online"                        color="blue" />
+        <StatCard icon={Users} label="Total Users" value={users?.meta?.total} color="navy" />
+        <StatCard icon={Shield} label="Total Roles" value={roles?.data?.length} color="gold" />
+        <StatCard icon={Menu} label="Total Menus" value={menus?.data?.length} color="green" />
+        <StatCard icon={LayoutDashboard} label="Active" value="Online" color="blue" />
       </div>
     </div>
   )

@@ -7,6 +7,18 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
+    public function register(array $data): void
+    {
+        User::create([
+            'name'      => $data['name'],
+            'username'  => $data['username'],
+            'email'     => $data['email'],
+            'password'  => Hash::make($data['password']),
+            'role_id'   => null,
+            'is_active' => false,
+        ]);
+    }
+
     public function login(array $data): array
     {
         $login = $data['login'];
@@ -15,7 +27,7 @@ class AuthService
         $user = User::where($field, $login)->with('role')->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw new \InvalidArgumentException('Invalid credentials.');
+            throw new \InvalidArgumentException('Username/Email atau Password yang Anda masukkan salah.');
         }
 
         if (!$user->is_active) {
@@ -38,6 +50,24 @@ class AuthService
     public function me(User $user): array
     {
         return $this->formatUser($user->load('role.permissions', 'role.menus'));
+    }
+
+    public function updateProfile(User $user, array $data): array
+    {
+        if (!empty($data['password'])) {
+            if (!Hash::check($data['current_password'], $user->password)) {
+                throw new \InvalidArgumentException('Password saat ini tidak sesuai.');
+            }
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        unset($data['current_password'], $data['password_confirmation']);
+
+        $user->update($data);
+
+        return $this->formatUser($user->fresh()->load('role'));
     }
 
     private function formatUser(User $user): array

@@ -29,11 +29,11 @@ export function MenuForm({ menu, onSubmit, onClose, loading }) {
     if (menu) {
       reset({
         parent_id: menu.parent_id ?? '',
-        name:      menu.name,
-        slug:      menu.slug,
-        icon:      menu.icon || '',
-        route:     menu.route || '',
-        order:     menu.order,
+        name: menu.name,
+        slug: menu.slug,
+        icon: menu.icon || '',
+        route: menu.route || '',
+        order: menu.order,
         is_active: Boolean(menu.is_active),
       })
     } else {

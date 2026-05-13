@@ -57,7 +57,7 @@ class MenuService
 
     public function getSidebarForRole(int $roleId): Collection
     {
-        return Menu::with('children')
+        return Menu::with(['children' => fn($q) => $q->where('is_active', true)->orderBy('order')])
             ->whereHas('roles', fn($q) => $q->where('roles.id', $roleId))
             ->whereNull('parent_id')
             ->where('is_active', true)

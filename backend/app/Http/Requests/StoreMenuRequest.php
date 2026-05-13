@@ -18,7 +18,7 @@ class StoreMenuRequest extends FormRequest
             'parent_id' => ['nullable', 'exists:menus,id'],
             'name' => ['required', 'string', 'max:100'],
             'slug' => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('menus', 'slug')],
-            'icon' => ['nullable', 'string', 'max:100'],
+            'icon' => ['nullable', 'string', 'max:10000'],
             'route' => ['nullable', 'string', 'max:255'],
             'order' => ['integer', 'min:0'],
             'is_active' => ['boolean'],

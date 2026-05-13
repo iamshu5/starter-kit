@@ -1,22 +1,20 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '@/services/api/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const queryClient = useQueryClient()
+  const [showPass, setShowPass] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm()
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
 
   async function onSubmit(values) {
     try {
@@ -25,50 +23,111 @@ export function LoginPage() {
       setAuth(data.data.user, data.data.token)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed. Please try again.'
-      toast.error(message)
+      toast.error(err.response?.data?.message || 'Login gagal. Silakan coba lagi.')
     }
   }
 
   return (
-    <div className="w-full max-w-sm">
-      {/* Card */}
-      <div className="bg-white rounded-xl border border-white/10 shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-navy-2 px-6 py-5 border-b border-white/10">
-          <h1 className="text-[18px] font-semibold text-white tracking-tight">Starter Kit</h1>
-          <p className="text-[11px] text-white/50 mt-1">Sign in</p>
+    <div className="min-h-screen flex">
+      <div className="flex-1 flex flex-col items-center justify-center bg-white px-8 py-12 lg:px-16">
+        <div className="w-full max-w-100">
+          <h1 className="text-[28px] font-bold text-[#1a1f2e] mb-1.5">Sign In</h1>
+          <p className="text-[13px] text-[#5a6380] mb-8">Silahkan isi form.</p>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Email / Username */}
+            <div>
+              <label className="block text-[12px] font-medium text-[#3a4060] mb-1.5">
+                Email / Username <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="admin@example.com"
+                autoComplete="username"
+                autoFocus
+                disabled={isSubmitting}
+                className={`w-full px-4 py-2.5 text-[13px] rounded-lg border outline-none transition-colors bg-white
+                  ${errors.login
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-[#dde2ee] focus:border-navy'
+                  } disabled:opacity-60 disabled:cursor-not-allowed`}
+                {...register('login', { required: 'Email atau username wajib diisi.' })}
+              />
+              {errors.login && <p className="mt-1 text-[11px] text-red-500">{errors.login.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-[12px] font-medium text-[#3a4060] mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Masukkan password"
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-2.5 pr-10 text-[13px] rounded-lg border outline-none transition-colors bg-white
+                    ${errors.password
+                      ? 'border-red-400 focus:border-red-500'
+                      : 'border-[#dde2ee] focus:border-navy'
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  {...register('password', { required: 'Password wajib diisi.' })}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9aa0b8] hover:text-[#5a6380] transition-colors"
+                >
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password && <p className="mt-1 text-[11px] text-red-500">{errors.password.message}</p>}
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              className="w-full justify-center"
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              size="lg"
+            >
+              Sign In
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-[12px] text-[#9aa0b8]">
+            Belum punya akun?{' '}
+            <Link to="/register" className="text-navy font-medium hover:underline">Daftar sekarang</Link>
+          </p>
+        </div>
+      </div>
+
+      <div className="hidden lg:flex flex-1 bg-navy items-center justify-center relative overflow-hidden select-none">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-14 right-14 w-52 h-52 rounded-2xl border-2 border-white/10"
+            style={{ animation: 'auth-spin-cw 28s linear infinite', willChange: 'transform' }} />
+          <div className="absolute top-28 right-28 w-36 h-36 rounded-2xl border-2 border-white/8"
+            style={{ animation: 'auth-float-6 6s ease-in-out 0.5s infinite', willChange: 'transform' }} />
+          <div className="absolute bottom-20 left-14 w-40 h-40 rounded-2xl border-2 border-white/8"
+            style={{ animation: 'auth-spin-ccw 35s linear infinite', willChange: 'transform' }} />
+          <div className="absolute bottom-36 left-28 w-28 h-28 rounded-2xl border-2 border-white/10"
+            style={{ animation: 'auth-float-n6 8s ease-in-out 1.5s infinite', willChange: 'transform' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/2"
+            style={{ animation: 'auth-bg-pulse 7s ease-in-out infinite' }} />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
-          <Input
-            label="Username / Email"
-            placeholder="admin / admin@example.com"
-            autoComplete="username"
-            autoFocus
-            error={errors.login?.message}
-            {...register('login', { required: 'Username or email is required.' })}
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Masukan Password"
-            autoComplete="current-password"
-            error={errors.password?.message}
-            {...register('password', { required: 'Password is required.' })}
-          />
-
-          <Button
-            type="submit"
-            className="w-full justify-center mt-2"
-            loading={isSubmitting}
-            size="lg"
-          >
-            Sign In
-          </Button>
-        </form>
+        <div className="relative z-10 text-center px-8">
+          <div className="w-16 h-16 rounded-2xl bg-gold flex items-center justify-center text-navy text-[22px] font-bold mx-auto mb-5 shadow-xl">
+            ISK
+          </div>
+          <div className="text-[30px] font-bold text-white tracking-tight mb-3">Starter Kit by iamshu</div>
+          <div className="text-[14px] text-white/50 leading-relaxed max-w-65 mx-auto">
+            Admin panel modern berbasis Laravel &amp; React untuk memulai projek dengan cepat.
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -10,7 +10,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { RoleForm } from '../components/RoleForm'
+import { RoleForm } from '@/features/roles/components/RoleForm'
+import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
 
@@ -49,13 +50,13 @@ function AssignModal({ role, onClose }) {
   const syncPermMutation = useMutation({
     mutationFn: () => rolesApi.syncPermissions(role.id, { permission_ids: currentPerms }),
     onSuccess: () => { toast.success('Permissions saved.'); qc.invalidateQueries({ queryKey: ['roles'] }); onClose() },
-    onError: (e) => toast.error(e.response?.data?.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   const syncMenuMutation = useMutation({
     mutationFn: () => rolesApi.syncMenus(role.id, { menu_ids: currentMenus }),
     onSuccess: () => { toast.success('Menus saved.'); qc.invalidateQueries({ queryKey: ['roles', role.id] }); onClose() },
-    onError: (e) => toast.error(e.response?.data?.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   function togglePerm(id) {
@@ -146,7 +147,7 @@ export function RolesPage() {
   const [assigning, setAssigning] = useState(null)
   const [deleting, setDeleting]  = useState(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['roles', { page, search, sortBy, sortDir }],
     queryFn: () => rolesApi.list({ page, search: search || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
     placeholderData: keepPreviousData,
@@ -165,20 +166,22 @@ export function RolesPage() {
   const createMutation = useMutation({
     mutationFn: (v) => rolesApi.create(v),
     onSuccess: () => { toast.success('Role created.'); qc.invalidateQueries({ queryKey: ['roles'] }); setModal(null) },
-    onError: (e) => toast.error(e.response?.data?.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, v }) => rolesApi.update(id, v),
     onSuccess: () => { toast.success('Role updated.'); qc.invalidateQueries({ queryKey: ['roles'] }); setModal(null) },
-    onError: (e) => toast.error(e.response?.data?.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id) => rolesApi.remove(id),
     onSuccess: () => { toast.success('Role deleted.'); qc.invalidateQueries({ queryKey: ['roles'] }); setDeleting(null) },
-    onError: (e) => toast.error(e.response?.data?.message || 'Failed.'),
+    onError: (e) => toast.error(toastMsg(e)),
   })
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   const columns = useMemo(() => [
     col.accessor('name', {
@@ -220,11 +223,15 @@ export function RolesPage() {
 
   return (
     <div>
+      {isMutating && (
+        <div className="fixed inset-0 z-60 cursor-wait" />
+      )}
+
       <PageHeader
         title="Roles"
         subtitle="Manage roles, permissions dan menu access"
         actions={
-          <Button onClick={() => setModal({ mode: 'create' })}>
+          <Button onClick={() => setModal({ mode: 'create' })} disabled={isMutating}>
             <Plus size={12} /> Add Role
           </Button>
         }
@@ -242,8 +249,21 @@ export function RolesPage() {
             />
           </div>
         </div>
-        <DataTable columns={columns} data={data?.data || []} loading={isLoading} sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-        <Pagination meta={data?.meta} onPageChange={setPage} />
+        {isError
+          ? <div className="py-10 text-center text-[12px] text-[#e05252]">Gagal memuat data. Silakan muat ulang halaman.</div>
+          : <>
+              <DataTable
+                columns={columns}
+                data={data?.data || []}
+                loading={isLoading}
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={handleSort}
+                rowOffset={(page - 1) * 15}
+                mutating={isMutating}
+              />
+              <Pagination meta={data?.meta} onPageChange={setPage} disabled={isMutating} />
+            </>}
       </div>
 
       {/* Create / Edit Modal */}
