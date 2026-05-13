@@ -59,7 +59,7 @@ export function AccountModal({ open, onClose }) {
       open={open}
       onClose={onClose}
       title="Account Setting"
-      size="sm"
+      size="lg"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Close</Button>
@@ -67,7 +67,7 @@ export function AccountModal({ open, onClose }) {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
         <Input
           label="Nama"
           placeholder="Nama lengkap"
@@ -80,18 +80,20 @@ export function AccountModal({ open, onClose }) {
           error={errors.username?.message}
           {...register('username', { required: 'Username wajib diisi.' })}
         />
-        <Input
-          label="Email"
-          type="email"
-          placeholder="email@contoh.com"
-          error={errors.email?.message}
-          {...register('email', {
-            required: 'Email wajib diisi.',
-            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format email tidak valid.' },
-          })}
-        />
+        <div className="md:col-span-2">
+          <Input
+            label="Email"
+            type="email"
+            placeholder="email@contoh.com"
+            error={errors.email?.message}
+            {...register('email', {
+              required: 'Email wajib diisi.',
+              pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format email tidak valid.' },
+            })}
+          />
+        </div>
 
-        <div className="border-t border-[#dde2ee] pt-3">
+        <div className="md:col-span-2 border-t border-[#dde2ee] pt-3">
           <button
             type="button"
             onClick={() => setChangePass((v) => !v)}
@@ -103,9 +105,9 @@ export function AccountModal({ open, onClose }) {
         </div>
 
         {changePass && (
-          <div className="space-y-3">
+          <>
             <Input
-              label="Password Saat Ini"
+              label="Password Lama"
               type="password"
               error={errors.current_password?.message}
               {...register('current_password', { required: 'Password saat ini wajib diisi.' })}
@@ -119,17 +121,19 @@ export function AccountModal({ open, onClose }) {
                 minLength: { value: 8, message: 'Minimal 8 karakter.' },
               })}
             />
-            <Input
-              label="Konfirmasi Password"
-              type="password"
-              error={errors.password_confirmation?.message}
-              {...register('password_confirmation', {
-                required: 'Konfirmasi password wajib diisi.',
-                // eslint-disable-next-line react-hooks/incompatible-library
-                validate: (v) => v === watch('password') || 'Password tidak cocok.',
-              })}
-            />
-          </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Konfirmasi Password"
+                type="password"
+                error={errors.password_confirmation?.message}
+                {...register('password_confirmation', {
+                  required: 'Konfirmasi password wajib diisi.',
+                  // eslint-disable-next-line react-hooks/incompatible-library
+                  validate: (v) => v === watch('password') || 'Password tidak cocok.',
+                })}
+              />
+            </div>
+          </>
         )}
       </form>
     </Modal>

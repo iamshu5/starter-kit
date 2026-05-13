@@ -163,6 +163,7 @@ export function UsersPage() {
           open
           onClose={() => setModal(null)}
           title={modal.mode === 'edit' ? 'Edit User' : 'Add User'}
+          size="lg"
         >
           <UserForm
             user={modal.user}

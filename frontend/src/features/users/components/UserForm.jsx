@@ -38,22 +38,19 @@ export function UserForm({ user, onSubmit, onClose, loading }) {
   }, [user, reset])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input
-          label="Full Name"
-          placeholder="John Doe"
-          error={errors.name?.message}
-          {...register('name', { required: 'Name is required.' })}
-        />
-        <Input
-          label="Username"
-          placeholder="johndoe"
-          error={errors.username?.message}
-          {...register('username', { required: 'Username is required.' })}
-        />
-      </div>
-
+    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+      <Input
+        label="Full Name"
+        placeholder="John Doe"
+        error={errors.name?.message}
+        {...register('name', { required: 'Name is required.' })}
+      />
+      <Input
+        label="Username"
+        placeholder="johndoe"
+        error={errors.username?.message}
+        {...register('username', { required: 'Username is required.' })}
+      />
       <Input
         label="Email"
         type="email"
@@ -61,11 +58,10 @@ export function UserForm({ user, onSubmit, onClose, loading }) {
         error={errors.email?.message}
         {...register('email', { required: 'Email is required.' })}
       />
-
       <Input
-        label={user ? 'New Password (Isi jika ingin ubah password)' : 'Password'}
+        label={user ? 'New Password' : 'Password'}
         type="password"
-        placeholder="Min 8 characters"
+        placeholder={user ? 'Kosongkan jika tidak diubah' : 'Min 8 characters'}
         error={errors.password?.message}
         {...register('password', {
           validate: (v) => {
@@ -75,34 +71,29 @@ export function UserForm({ user, onSubmit, onClose, loading }) {
           },
         })}
       />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Select
-          label="Role"
-          error={errors.role_id?.message}
-          {...register('role_id')}
-        >
-          <option value="">— No Role —</option>
-          {(Array.isArray(rolesData) ? rolesData : []).map((r) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
-        </Select>
-
-        <Controller
-          name="is_active"
-          control={control}
-          defaultValue={true}
-          render={({ field }) => (
-            <Toggle
-              label="Status"
-              checked={Boolean(field.value)}
-              onChange={field.onChange}
-            />
-          )}
-        />
-      </div>
-
-      <div className="flex justify-end gap-2 pt-2">
+      <Select
+        label="Role"
+        error={errors.role_id?.message}
+        {...register('role_id')}
+      >
+        <option value="">— No Role —</option>
+        {(Array.isArray(rolesData) ? rolesData : []).map((r) => (
+          <option key={r.id} value={r.id}>{r.name}</option>
+        ))}
+      </Select>
+      <Controller
+        name="is_active"
+        control={control}
+        defaultValue={true}
+        render={({ field }) => (
+          <Toggle
+            label="Status"
+            checked={Boolean(field.value)}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <div className="md:col-span-2 flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
         <Button type="submit" loading={loading}>{user ? 'Update' : 'Create'} User</Button>
       </div>

@@ -42,68 +42,59 @@ export function MenuForm({ menu, onSubmit, onClose, loading }) {
   }, [menu, reset])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input
-          label="Menu Name"
-          placeholder="Dashboard"
-          error={errors.name?.message}
-          {...register('name', { required: 'Name is required.' })}
-        />
-        <Input
-          label="Slug"
-          placeholder="dashboard"
-          error={errors.slug?.message}
-          {...register('slug', { required: 'Slug is required.' })}
-        />
-      </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+      <Input
+        label="Menu Name"
+        placeholder="Dashboard"
+        error={errors.name?.message}
+        {...register('name', { required: 'Name is required.' })}
+      />
+      <Input
+        label="Slug"
+        placeholder="dashboard"
+        error={errors.slug?.message}
+        {...register('slug', { required: 'Slug is required.' })}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="block text-[11px] font-semibold text-[#3a4060] uppercase tracking-wide">
-            Icon
-          </label>
-          <div className="flex gap-2">
-            <textarea
-              rows={3}
-              className="flex-1 px-3 py-2 text-[11px] font-mono border border-[#dde2ee] rounded-lg outline-none focus:border-navy resize-none"
-              placeholder={'<svg xmlns=...\n  <path ... />\n</svg>'}
-              {...register('icon')}
-            />
-            {/* Live preview */}
-            <div className="w-10 h-10 shrink-0 flex items-center justify-center border border-[#dde2ee] rounded-lg bg-[#f7f8fc] text-[#3a4060]">
-              {iconPreview.trim()
-                ? <SvgIcon icon={iconPreview} size={20} />
-                : <span className="text-[9px] text-[#9aa0b8]">Preview</span>
-              }
-            </div>
+      {/* Icon — full width */}
+      <div className="md:col-span-2 space-y-1">
+        <label className="text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide">Icon</label>
+        <div className="flex gap-2">
+          <textarea
+            rows={3}
+            className="flex-1 px-3 py-2 text-[11px] font-mono border border-[#dde2ee] rounded-lg outline-none focus:border-navy resize-none"
+            placeholder={'<svg xmlns=...\n  <path ... />\n</svg>'}
+            {...register('icon')}
+          />
+          <div className="w-10 h-10 shrink-0 flex items-center justify-center border border-[#dde2ee] rounded-lg bg-[#f7f8fc] text-[#3a4060]">
+            {iconPreview.trim()
+              ? <SvgIcon icon={iconPreview} size={20} />
+              : <span className="text-[9px] text-[#9aa0b8]">Preview</span>
+            }
           </div>
-          <p className="text-[10px] text-[#9aa0b8]">
-            Buka <a href="https://heroicons.com" target="_blank" rel="noreferrer" className="underline hover:text-navy">heroicons.com</a>, pilih icon klik "Copy SVG", dan paste di sini.
-          </p>
         </div>
-        <Input
-          label="Route / Path"
-          placeholder="/dashboard"
-          {...register('route')}
-        />
+        <p className="text-[10px] text-[#9aa0b8]">
+          Buka <a href="https://heroicons.com" target="_blank" rel="noreferrer" className="underline hover:text-navy">heroicons.com</a>, pilih icon lalu klik "Copy SVG" dan paste di sini.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Select label="Parent Menu" {...register('parent_id')}>
-          <option value="">— Top Level —</option>
-          {(flatMenus || [])
-            .filter((m) => !menu || m.id !== menu.id)
-            .map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </Select>
-        <Input
-          label="Order"
-          type="number"
-          min={0}
-          {...register('order', { valueAsNumber: true })}
-        />
-      </div>
-
+      <Input
+        label="Route / Path"
+        placeholder="/dashboard"
+        {...register('route')}
+      />
+      <Select label="Parent Menu" {...register('parent_id')}>
+        <option value="">— Top Level —</option>
+        {(flatMenus || [])
+          .filter((m) => !menu || m.id !== menu.id)
+          .map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+      </Select>
+      <Input
+        label="Order"
+        type="number"
+        min={0}
+        {...register('order', { valueAsNumber: true })}
+      />
       <Controller
         name="is_active"
         control={control}
@@ -117,7 +108,7 @@ export function MenuForm({ menu, onSubmit, onClose, loading }) {
         )}
       />
 
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="md:col-span-2 flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
         <Button type="submit" loading={loading}>{menu ? 'Update' : 'Create'} Menu</Button>
       </div>

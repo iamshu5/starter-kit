@@ -166,6 +166,7 @@ export function MenusPage() {
           open
           onClose={() => setModal(null)}
           title={modal.mode === 'edit' ? 'Edit Menu' : 'Add Menu'}
+          size="lg"
         >
           <MenuForm
             menu={modal.menu}

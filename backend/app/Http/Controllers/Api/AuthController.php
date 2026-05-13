@@ -15,8 +15,12 @@ class AuthController extends Controller
 {
     public function register(RegisterRequest $request, AuthService $authService): JsonResponse
     {
-        $authService->register($request->validated());
-        return ApiResponse::success(null, 'Registrasi berhasil. Akun Anda menunggu aktivasi dari Admin.', 201);
+        try {
+            $authService->register($request->validated());
+            return ApiResponse::success(null, 'Registrasi berhasil. Akun Anda menunggu aktivasi dari Admin.', 201);
+        } catch (\InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
     }
 
     public function login(LoginRequest $request, AuthService $authService): JsonResponse

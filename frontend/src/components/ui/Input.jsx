@@ -1,4 +1,28 @@
-export function Input({ label, error, hint, className = '', ...props }) {
+export function Input({ label, error, hint, horizontal = false, className = '', ...props }) {
+  if (horizontal) {
+    return (
+      <div className="flex items-start gap-3">
+        {label && (
+          <label className="w-28 shrink-0 text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide text-right pt-1.5 leading-tight">
+            {label}
+          </label>
+        )}
+        <div className="flex-1 min-w-0">
+          <input
+            className={`w-full px-2.5 py-1.5 rounded-md border text-[12px] text-[#1a1f2e] bg-white outline-none transition-colors
+              focus:border-navy-3 placeholder:text-[#9aa0b8]
+              ${error ? 'border-red-400 bg-red-50' : 'border-[#dde2ee]'}
+              ${props.readOnly ? 'bg-[#f7f8fc] text-[#5a6380]' : ''}
+              ${className}`}
+            {...props}
+          />
+          {error && <span className="text-[10px] text-red-500 mt-0.5 block">{error}</span>}
+          {hint && !error && <span className="text-[10px] text-[#9aa0b8] mt-0.5 block">{hint}</span>}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -20,7 +44,31 @@ export function Input({ label, error, hint, className = '', ...props }) {
   )
 }
 
-export function Select({ label, error, children, className = '', ...props }) {
+export function Select({ label, error, horizontal = false, children, className = '', ...props }) {
+  if (horizontal) {
+    return (
+      <div className="flex items-start gap-3">
+        {label && (
+          <label className="w-28 shrink-0 text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide text-right pt-1.5 leading-tight">
+            {label}
+          </label>
+        )}
+        <div className="flex-1 min-w-0">
+          <select
+            className={`w-full px-2.5 py-1.5 rounded-md border text-[12px] text-[#1a1f2e] bg-white outline-none transition-colors
+              focus:border-navy-3
+              ${error ? 'border-red-400 bg-red-50' : 'border-[#dde2ee]'}
+              ${className}`}
+            {...props}
+          >
+            {children}
+          </select>
+          {error && <span className="text-[10px] text-red-500 mt-0.5 block">{error}</span>}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
       {label && (
@@ -49,14 +97,9 @@ export function Select({ label, error, children, className = '', ...props }) {
  *     <Toggle label="Status" checked={field.value} onChange={field.onChange} />
  *   )} />
  */
-export function Toggle({ label, checked, onChange, disabled = false }) {
-  return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <span className="text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide">
-          {label}
-        </span>
-      )}
+export function Toggle({ label, checked, onChange, disabled = false, horizontal = false }) {
+  const button = (
+    <div className="flex flex-col gap-0.5">
       <button
         type="button"
         role="switch"
@@ -76,4 +119,29 @@ export function Toggle({ label, checked, onChange, disabled = false }) {
       </span>
     </div>
   )
+
+  if (horizontal) {
+    return (
+      <div className="flex items-center gap-3">
+        {label && (
+          <span className="w-28 shrink-0 text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide text-right leading-tight">
+            {label}
+          </span>
+        )}
+        {button}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {label && (
+        <span className="text-[10px] font-semibold text-[#5a6380] uppercase tracking-wide">
+          {label}
+        </span>
+      )}
+      {button}
+    </div>
+  )
 }
+

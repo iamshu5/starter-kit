@@ -24,7 +24,7 @@ export function RoleForm({ role, onSubmit, onClose, loading }) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
       <Input
         label="Role Name"
         placeholder="Administrator"
@@ -42,16 +42,18 @@ export function RoleForm({ role, onSubmit, onClose, loading }) {
       <Input
         label="Slug"
         placeholder="administrator"
-        hint="Lowercase, tanpa spasi (Contoh: admin, super-admin, staff)"
+        hint="Lowercase, tanpa spasi"
         error={errors.slug?.message}
         {...register('slug', { required: 'Slug is required.' })}
       />
-      <Input
-        label="Description"
-        placeholder="Optional description"
-        {...register('description')}
-      />
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="md:col-span-2">
+        <Input
+          label="Description"
+          placeholder="Optional description"
+          {...register('description')}
+        />
+      </div>
+      <div className="md:col-span-2 flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onClose}>Close</Button>
         <Button type="submit" loading={loading}>{role ? 'Update' : 'Create'} Role</Button>
       </div>

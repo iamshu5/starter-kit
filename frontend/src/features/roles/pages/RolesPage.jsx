@@ -272,7 +272,7 @@ export function RolesPage() {
           open
           onClose={() => setModal(null)}
           title={modal.mode === 'edit' ? 'Edit Role' : 'Add Role'}
-          size="sm"
+          size="lg"
         >
           <RoleForm
             role={modal.role}
