@@ -1,0 +1,646 @@
+{
+  "info": {
+    "name": "Starter Kit API",
+    "description": "Koleksi API lengkap untuk Starter Kit (Laravel 11 + Sanctum). Setelah login, token otomatis tersimpan ke variable {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/api",
+      "type": "string",
+      "description": "Ganti sesuai domain Laragon kamu, contoh: http://starter-kit.test/api"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Diisi otomatis saat login berhasil"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ping",
+              "host": ["{{base_url}}"],
+              "path": ["ping"]
+            },
+            "description": "Cek apakah server aktif. Tidak perlu token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('Token tersimpan:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"login\": \"admin@example.com\",\n    \"password\": \"password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login dengan email atau username.\n\n**Rate limit:** 10 request/menit.\n\n**Response sukses:** token + data user disimpan otomatis ke variable `{{token}}`."
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"John Doe\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Daftar akun baru. Akun otomatis `is_active = false` — butuh diaktifkan admin.\n\n**Rate limit:** 10 request/menit."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Hapus token aktif saat ini. Token langsung tidak valid."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    console.log('Token baru tersimpan:', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Rotasi token — token lama dihapus, token baru dikembalikan.\n\n**WAJIB:** Kirim `Authorization: Bearer {token}` yang masih valid.\n\nToken baru otomatis tersimpan ke variable `{{token}}`."
+          }
+        },
+        {
+          "name": "Me (Get Profile)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Ambil data user yang sedang login, termasuk role, permissions, dan menus."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"John Doe Updated\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update profil user yang sedang login.\n\nSemua field opsional (`sometimes`).\n\n**Untuk ganti password**, tambahkan:\n```json\n{\n  \"current_password\": \"oldpass\",\n  \"password\": \"newpass123\",\n  \"password_confirmation\": \"newpass123\"\n}\n```"
+          }
+        },
+        {
+          "name": "Update Profile (dengan ganti password)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"John Doe\",\n    \"current_password\": \"password\",\n    \"password\": \"newpassword123\",\n    \"password_confirmation\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update profil sekaligus ganti password. `current_password` wajib ada jika field `password` diisi."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "CRUD Users. Membutuhkan permission `users.*` sesuai action.",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users?page=1&per_page=15&search=&sort_by=created_at&sort_dir=desc",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "15" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan name, username, email" },
+                { "key": "sort_by", "value": "created_at", "description": "name | username | email | created_at" },
+                { "key": "sort_dir", "value": "desc", "description": "asc | desc" }
+              ]
+            },
+            "description": "Daftar user dengan pagination, search, dan sort.\n\n**Permission:** `users.view`"
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "1"]
+            },
+            "description": "Ambil detail satu user berdasarkan ID.\n\n**Permission:** `users.view`"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Jane Doe\",\n    \"username\": \"janedoe\",\n    \"email\": \"jane@example.com\",\n    \"password\": \"password123\",\n    \"role_id\": 1,\n    \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Buat user baru.\n\n**Permission:** `users.create`\n\n- `role_id`: nullable, ID role yang ada\n- `is_active`: boolean, default false jika tidak dikirim\n- Password di-hash otomatis oleh model"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Jane Doe Updated\",\n    \"username\": \"janedoe\",\n    \"email\": \"jane@example.com\",\n    \"role_id\": 2,\n    \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/2",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2"]
+            },
+            "description": "Update data user. Semua field opsional (`sometimes`).\n\n**Permission:** `users.update`\n\n- Untuk ganti password: tambahkan `\"password\": \"newpass\"` (min 8 karakter)\n- Kosongkan / jangan kirim field `password` jika tidak ingin diubah"
+          }
+        },
+        {
+          "name": "Update User (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"is_active\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/2",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2"]
+            },
+            "description": "Partial update — kirim hanya field yang ingin diubah.\n\n**Permission:** `users.update`"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/2",
+              "host": ["{{base_url}}"],
+              "path": ["users", "2"]
+            },
+            "description": "Hapus user beserta semua token-nya.\n\n**Permission:** `users.delete`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "CRUD Roles + sync permissions & menus. Membutuhkan permission `roles.*`.",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles?page=1&per_page=15&search=&sort_by=name&sort_dir=asc",
+              "host": ["{{base_url}}"],
+              "path": ["roles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "15" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan name, slug" },
+                { "key": "sort_by", "value": "name", "description": "name | slug | created_at" },
+                { "key": "sort_dir", "value": "asc", "description": "asc | desc" }
+              ]
+            },
+            "description": "Daftar role dengan jumlah users (`users_count`).\n\n**Permission:** `roles.view`"
+          }
+        },
+        {
+          "name": "Get Role",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/1",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "1"]
+            },
+            "description": "Detail role beserta daftar permissions dan menus yang di-assign.\n\n**Permission:** `roles.view`"
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Manager\",\n    \"slug\": \"manager\",\n    \"description\": \"Role untuk manager\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/roles",
+              "host": ["{{base_url}}"],
+              "path": ["roles"]
+            },
+            "description": "Buat role baru.\n\n**Permission:** `roles.create`\n\n- `slug`: unique, lowercase, hanya huruf/angka/dash"
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Manager Updated\",\n    \"slug\": \"manager\",\n    \"description\": \"Role untuk senior manager\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/3",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "3"]
+            },
+            "description": "Update role.\n\n**Permission:** `roles.update`"
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/3",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "3"]
+            },
+            "description": "Hapus role. Users yang menggunakan role ini akan kehilangan role (`role_id` menjadi null, tergantung cascade).\n\n**Permission:** `roles.delete`"
+          }
+        },
+        {
+          "name": "Sync Permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"permission_ids\": [1, 2, 3, 4]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/1/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "1", "permissions"]
+            },
+            "description": "Sync (replace all) permissions untuk role.\n\nKirim array kosong `[]` untuk menghapus semua permissions.\n\n**Permission:** `roles.update`"
+          }
+        },
+        {
+          "name": "Sync Menus",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"menu_ids\": [1, 2, 3]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/1/menus",
+              "host": ["{{base_url}}"],
+              "path": ["roles", "1", "menus"]
+            },
+            "description": "Sync (replace all) menu akses untuk role. Sidebar cache di-clear otomatis.\n\nKirim array kosong `[]` untuk menghapus semua akses menu.\n\n**Permission:** `roles.update`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Menus",
+      "description": "CRUD Menus + endpoint khusus UI (flat list & sidebar).",
+      "item": [
+        {
+          "name": "List Menus (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/menus?page=1&per_page=15&search=&sort_by=order&sort_dir=asc",
+              "host": ["{{base_url}}"],
+              "path": ["menus"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "15" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan name, slug, route" },
+                { "key": "sort_by", "value": "order", "description": "name | slug | route | order | created_at" },
+                { "key": "sort_dir", "value": "asc", "description": "asc | desc" }
+              ]
+            },
+            "description": "Daftar semua menu dengan parent info, paginated.\n\n**Permission:** `menus.view`"
+          }
+        },
+        {
+          "name": "Flat List (untuk dropdown)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/menus/flat",
+              "host": ["{{base_url}}"],
+              "path": ["menus", "flat"]
+            },
+            "description": "Semua menu dalam flat array (non-paginated). Dipakai untuk dropdown pilih parent menu di form."
+          }
+        },
+        {
+          "name": "Sidebar (berdasarkan role login)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/menus/sidebar",
+              "host": ["{{base_url}}"],
+              "path": ["menus", "sidebar"]
+            },
+            "description": "Menu hierarki (nested children) untuk sidebar, difilter berdasarkan role user yang login. Response di-cache per role."
+          }
+        },
+        {
+          "name": "Get Menu",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/menus/1",
+              "host": ["{{base_url}}"],
+              "path": ["menus", "1"]
+            },
+            "description": "Detail menu beserta children-nya.\n\n**Permission:** `menus.view`"
+          }
+        },
+        {
+          "name": "Create Menu",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"parent_id\": null,\n    \"name\": \"Products\",\n    \"slug\": \"products\",\n    \"icon\": \"<svg xmlns=\\\"http://www.w3.org/2000/svg\\\" fill=\\\"none\\\" viewBox=\\\"0 0 24 24\\\" stroke-width=\\\"1.5\\\" stroke=\\\"currentColor\\\"><path stroke-linecap=\\\"round\\\" stroke-linejoin=\\\"round\\\" d=\\\"M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z\\\" /></svg>\",\n    \"route\": \"/products\",\n    \"order\": 5,\n    \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/menus",
+              "host": ["{{base_url}}"],
+              "path": ["menus"]
+            },
+            "description": "Buat menu baru. Sidebar cache di-clear otomatis.\n\n**Permission:** `menus.create`\n\n- `parent_id`: null untuk top-level, atau ID menu parent\n- `icon`: SVG string dari heroicons.com\n- `order`: urutan tampil di sidebar (integer >= 0)\n- `is_active`: boolean"
+          }
+        },
+        {
+          "name": "Update Menu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Products\",\n    \"slug\": \"products\",\n    \"route\": \"/products\",\n    \"order\": 5,\n    \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/menus/5",
+              "host": ["{{base_url}}"],
+              "path": ["menus", "5"]
+            },
+            "description": "Update menu. Sidebar cache di-clear otomatis.\n\n**Permission:** `menus.update`"
+          }
+        },
+        {
+          "name": "Delete Menu",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/menus/5",
+              "host": ["{{base_url}}"],
+              "path": ["menus", "5"]
+            },
+            "description": "Hapus menu. Sidebar cache di-clear otomatis.\n\n**Permission:** `menus.delete`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "List All Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["permissions"]
+            },
+            "description": "Semua permission diurutkan berdasarkan slug. Dipakai di halaman assign permissions ke role.\n\n**Permission:** `roles.view`"
+          }
+        }
+      ]
+    }
+  ]
+}

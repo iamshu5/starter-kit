@@ -13,5 +13,20 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
-  }
+  },
+  build: {
+    target: 'es2020',
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-table': ['@tanstack/react-table'],
+          'vendor-ui': ['lucide-react', 'sonner'],
+          'vendor-misc': ['axios', 'zustand'],
+        },
+      },
+    },
+  },
 })

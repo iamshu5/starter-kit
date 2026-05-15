@@ -1,6 +1,6 @@
 const variants = {
   primary: 'bg-[#1a3a6b] text-white hover:bg-[#22468a] border-[#1a3a6b]',
-  gold:    'bg-[#c8a96e] text-[#1a3a6b] font-semibold hover:bg-[#a8893e] hover:text-white border-[#c8a96e]',
+  gold:    'bg-[#FFBF40] text-white font-semibold hover:bg-[#F0B237] hover:text-white border-[#FFBF40]',
   outline: 'bg-transparent text-[#1a3a6b] border-[#1a3a6b] hover:bg-[#e8eef8]',
   danger:  'bg-red-50 text-red-600 border-red-200 hover:bg-red-100',
   ghost:   'bg-white text-[#5a6380] border-[#dde2ee] hover:bg-[#f7f8fc]',

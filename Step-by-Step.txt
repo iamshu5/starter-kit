@@ -1,4 +1,5 @@
 Step-by-Step: Tambah Halaman Baru & Menu/Sub Menu
+(Panduan lengkap ada di GUIDE-ADD-FEATURE.md)
 
 A. Backend — Tambah Route
 Edit api.php:
@@ -20,6 +21,16 @@ const titles = { ..., '/products': 'Products' }
 
 POST /api/permissions
 { "name": "View Products", "slug": "products.view" }
+
+D. Jika Fitur Ada File Upload (foto/dokumen maks 5 MB)
+Lihat GUIDE-ADD-FEATURE.md Bagian 2 (Upload Step A–H) untuk langkah lengkap.
+
+Catatan penting yang sering salah:
+- max: di FormRequest, maxKb di FileService, maxKb di FileInput HARUS SAMA (5120)
+- FileService default = 2048 KB — wajib kirim maxKb: 5120 secara eksplisit
+- Untuk gambar: accept="image/jpeg,image/png,image/webp" + mimes:jpeg,png,webp
+- Untuk dokumen: accept=".pdf,.doc,.docx" + mimes:pdf,doc,docx
+- Accessor di Model gunakan: app(FileService::class)->url($this->xxx_path)
 
 C. Tambah Menu/Sub Menu via Admin Panel
 Login → buka halaman Menus

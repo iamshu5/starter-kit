@@ -4,6 +4,7 @@ import { Menu, Moon, Sun } from 'lucide-react'
 import { Sidebar } from '@/layouts/Sidebar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AccountModal } from '@/features/auth/components/AccountModal'
+import { NetworkIndicator } from '@/components/ui/NetworkIndicator'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useThemeStore } from '@/stores/themeStore'
 
@@ -59,6 +60,8 @@ export function AppLayout() {
           <div className="flex-1">
             <div className="text-[14px] font-semibold text-white">{title}</div>
           </div>
+          {/* Network indicator */}
+          <NetworkIndicator />
           {/* Dark mode */}
           <button
             onClick={toggleDark}

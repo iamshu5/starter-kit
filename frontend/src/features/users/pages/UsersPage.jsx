@@ -99,11 +99,11 @@ export function UsersPage() {
       header: 'Actions',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="ghost" onClick={() => setModal({ mode: 'edit', user: row.original })}>
-            <Pencil size={11} /> Edit
+          <Button size="sm" variant="gold" onClick={() => setModal({ mode: 'edit', user: row.original })}>
+            <Pencil size={11} />
           </Button>
           <Button size="sm" variant="danger" onClick={() => setDeleting(row.original)}>
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} />
           </Button>
         </div>
       ),

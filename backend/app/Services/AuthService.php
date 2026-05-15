@@ -47,6 +47,13 @@ class AuthService
         $user->tokens()->where('id', $user->currentAccessToken()->id)->delete();
     }
 
+    public function refresh(User $user): array
+    {
+        $user->tokens()->where('id', $user->currentAccessToken()->id)->delete();
+        $token = $user->createToken('api-token')->plainTextToken;
+        return ['token' => $token];
+    }
+
     public function me(User $user): array
     {
         return $this->formatUser($user->load('role.permissions', 'role.menus'));

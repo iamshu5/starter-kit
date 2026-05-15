@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Traits\FullTextSearch;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserService
 {
+    use FullTextSearch;
     public function paginate(int $perPage = 15, ?string $search = null, string $sortBy = 'created_at', string $sortDir = 'desc'): LengthAwarePaginator
     {
         $allowed = ['name', 'username', 'email', 'created_at'];
@@ -14,11 +16,7 @@ class UserService
         $sortDir = $sortDir === 'asc' ? 'asc' : 'desc';
 
         return User::with('role')
-            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('username', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            }))
+            ->when($search, fn($q) => $this->applySearch($q, $search, ['name', 'username', 'email']))
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage);
     }

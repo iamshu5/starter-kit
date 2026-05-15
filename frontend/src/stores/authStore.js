@@ -9,9 +9,10 @@ export const useAuthStore = create(
       _hasHydrated: false,
 
       setHasHydrated: (val) => set({ _hasHydrated: val }),
-      setAuth: (user, token) => set({ user, token }),
-      setUser: (user) => set({ user }),
-      clearAuth: () => set({ user: null, token: null }),
+      setAuth:        (user, token) => set({ user, token }),
+      setUser:        (user) => set({ user }),
+      setToken:       (token) => set({ token }),
+      clearAuth:      () => set({ user: null, token: null }),
     }),
     {
       name: 'auth-storage',

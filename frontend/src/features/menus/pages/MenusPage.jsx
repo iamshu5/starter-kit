@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { MenuForm } from '@/features/menus/components/MenuForm'
+import { useDebounce } from '@/hooks/useDebounce'
 import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
@@ -24,9 +25,11 @@ export function MenusPage() {
   const [modal, setModal] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
+  const debouncedSearch = useDebounce(search, 400)
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['menus', 'list', { page, search, sortBy, sortDir }],
-    queryFn: () => menusApi.list({ page, search: search || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
+    queryKey: ['menus', 'list', { page, search: debouncedSearch, sortBy, sortDir }],
+    queryFn: () => menusApi.list({ page, search: debouncedSearch || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
     placeholderData: keepPreviousData,
   })
 
@@ -105,11 +108,11 @@ export function MenusPage() {
       header: 'Actions',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="ghost" onClick={() => setModal({ mode: 'edit', menu: row.original })}>
-            <Pencil size={11} /> Edit
+          <Button size="sm" variant="gold" onClick={() => setModal({ mode: 'edit', menu: row.original })}>
+            <Pencil size={11} />
           </Button>
           <Button size="sm" variant="danger" onClick={() => setDeleting(row.original)}>
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} />
           </Button>
         </div>
       ),

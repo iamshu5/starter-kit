@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useQueryClient } from '@tanstack/react-query'
@@ -8,22 +8,50 @@ import { authApi } from '@/services/api/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/Button'
 
+const MAX_ATTEMPTS = 10
+const LOCKOUT_SECONDS = 30
+
 export function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const queryClient = useQueryClient()
   const [showPass, setShowPass] = useState(false)
 
+  // protek Brute force
+  const [attempts, setAttempts]  = useState(0)
+  const [countdown, setCountdown] = useState(0)
+  const isLocked = countdown > 0
+
+  useEffect(() => {
+    if (!isLocked) return
+    const timer = setInterval(() => {
+      setCountdown((s) => {
+        if (s <= 1) { setAttempts(0); return 0 }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [isLocked])
+
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
 
   async function onSubmit(values) {
+    if (isLocked) return
     try {
       const { data } = await authApi.login(values)
       queryClient.clear()
       setAuth(data.data.user, data.data.token)
       navigate('/dashboard', { replace: true })
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login gagal. Silakan coba lagi.')
+      const next = attempts + 1
+      if (next >= MAX_ATTEMPTS) {
+        setAttempts(0)
+        setCountdown(LOCKOUT_SECONDS)
+        toast.error(`Terlalu banyak percobaan. Coba lagi dalam ${LOCKOUT_SECONDS} detik.`)
+      } else {
+        setAttempts(next)
+        toast.error(err.response?.data?.message || 'Login gagal. Silakan coba lagi.')
+      }
     }
   }
 
@@ -91,10 +119,10 @@ export function LoginPage() {
               type="submit"
               className="w-full justify-center"
               loading={isSubmitting}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLocked}
               size="lg"
             >
-              Sign In
+              {isLocked ? `Tunggu ${countdown}s...` : 'Sign In'}
             </Button>
           </form>
 

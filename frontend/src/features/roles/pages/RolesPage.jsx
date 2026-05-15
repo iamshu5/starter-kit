@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { RoleForm } from '@/features/roles/components/RoleForm'
+import { useDebounce } from '@/hooks/useDebounce'
 import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
@@ -147,9 +148,11 @@ export function RolesPage() {
   const [assigning, setAssigning] = useState(null)
   const [deleting, setDeleting]  = useState(null)
 
+  const debouncedSearch = useDebounce(search, 400)
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['roles', { page, search, sortBy, sortDir }],
-    queryFn: () => rolesApi.list({ page, search: search || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
+    queryKey: ['roles', { page, search: debouncedSearch, sortBy, sortDir }],
+    queryFn: () => rolesApi.list({ page, search: debouncedSearch || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
     placeholderData: keepPreviousData,
   })
 
@@ -207,14 +210,14 @@ export function RolesPage() {
       header: 'Actions',
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="outline" onClick={() => setAssigning(row.original)}>
-            <Settings2 size={11} /> Assign
+          <Button size="sm" variant="primary" onClick={() => setAssigning(row.original)}>
+            <Settings2 size={11} />
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setModal({ mode: 'edit', role: row.original })}>
-            <Pencil size={11} /> Edit
+          <Button size="sm" variant="gold" onClick={() => setModal({ mode: 'edit', role: row.original })}>
+            <Pencil size={11} />
           </Button>
           <Button size="sm" variant="danger" onClick={() => setDeleting(row.original)}>
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} />
           </Button>
         </div>
       ),

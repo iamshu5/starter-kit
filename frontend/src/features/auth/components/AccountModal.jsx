@@ -63,7 +63,7 @@ export function AccountModal({ open, onClose }) {
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Close</Button>
-          <Button loading={mutation.isPending} onClick={handleSubmit(onSubmit)}>Simpan</Button>
+          <Button loading={mutation.isPending} onClick={handleSubmit(onSubmit)}>Save</Button>
         </>
       }
     >

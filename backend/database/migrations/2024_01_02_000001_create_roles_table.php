@@ -10,10 +10,12 @@ return new class extends Migration
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->index();
             $table->string('slug')->unique();
             $table->string('description')->nullable();
             $table->timestamps();
+            $table->index('created_at');
+            $table->fullText(['name', 'slug'], 'roles_fulltext_search');
         });
     }
 

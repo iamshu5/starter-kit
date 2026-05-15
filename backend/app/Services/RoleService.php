@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\Role;
 use App\Models\Permission;
+use App\Traits\FullTextSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoleService
 {
+    use FullTextSearch;
     public function all(): Collection
     {
         return Role::withCount('users')->get();
@@ -21,10 +23,7 @@ class RoleService
         $sortDir = $sortDir === 'asc' ? 'asc' : 'desc';
 
         return Role::withCount('users')
-            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
-            }))
+            ->when($search, fn($q) => $this->applySearch($q, $search, ['name', 'slug']))
             ->orderBy($sortBy, $sortDir)
             ->paginate($perPage);
     }
@@ -59,6 +58,7 @@ class RoleService
     public function syncMenus(Role $role, array $menuIds): Role
     {
         $role->menus()->sync($menuIds);
+        (new MenuService())->clearSidebarCache();
         return $role->load('menus');
     }
 

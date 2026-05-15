@@ -37,10 +37,10 @@ class ApiResponse
             'message' => $message,
             'data' => $paginator->items(),
             'meta' => [
-                'total'        => $paginator->total(),
-                'per_page'     => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
                 'current_page' => $paginator->currentPage(),
-                'last_page'    => $paginator->lastPage(),
+                'last_page' => $paginator->lastPage(),
                 'links' => [
                     'next' => $paginator->nextPageUrl(),
                     'prev' => $paginator->previousPageUrl(),

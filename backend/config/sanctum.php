@@ -43,9 +43,15 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | Set to null = tokens never expire (rely on explicit logout to invalidate).
+    | This is the correct pattern when /auth/refresh is behind auth:sanctum,
+    | because an expired token cannot call the refresh endpoint (also 401).
+    | If you want session timeout, implement a proper refresh-token pattern
+    | with a separate long-lived refresh token stored in HttpOnly cookie.
+    |
     */
 
-    'expiration' => 240,
+    'expiration' => null,
 
     /*
     |--------------------------------------------------------------------------

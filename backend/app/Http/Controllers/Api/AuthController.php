@@ -39,6 +39,12 @@ class AuthController extends Controller
         return ApiResponse::success(null, 'Logged out successfully');
     }
 
+    public function refresh(Request $request, AuthService $authService): JsonResponse
+    {
+        $result = $authService->refresh($request->user());
+        return ApiResponse::success($result, 'Token refreshed');
+    }
+
     public function me(Request $request, AuthService $authService): JsonResponse
     {
         $user = $authService->me($request->user());
