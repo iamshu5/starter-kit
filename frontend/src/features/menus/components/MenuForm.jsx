@@ -2,18 +2,24 @@ import { useEffect } from 'react'
 import { useForm, useWatch, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { menusApi } from '@/services/api/menus'
-import { Input, Select, Toggle } from '@/components/ui/Input'
+import { Input, Toggle } from '@/components/ui/Input'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Button } from '@/components/ui/Button'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 
 export function MenuForm({ menu, onSubmit, onClose, loading }) {
-  const { data: flatMenus } = useQuery({
+  const { data: flatMenus, isLoading: flatMenusLoading } = useQuery({
     queryKey: ['menus', 'flat'],
     queryFn: () => menusApi.flat().then((r) => {
       const d = r.data?.data
       return Array.isArray(d) ? d : []
     }),
+    staleTime: 5 * 60 * 1000,
   })
+
+  const parentOptions = (flatMenus || [])
+    .filter((m) => !menu || m.id !== menu.id)
+    .map((m) => ({ value: m.id, label: m.name }))
 
   const {
     register,
@@ -83,12 +89,21 @@ export function MenuForm({ menu, onSubmit, onClose, loading }) {
         placeholder="/dashboard"
         {...register('route')}
       />
-      <Select label="Parent Menu" {...register('parent_id')}>
-        <option value="">— Top Level —</option>
-        {(flatMenus || [])
-          .filter((m) => !menu || m.id !== menu.id)
-          .map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-      </Select>
+      <Controller
+        name="parent_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Parent Menu"
+            options={parentOptions}
+            value={parentOptions.find((o) => String(o.value) === String(field.value)) || null}
+            onChange={(opt) => field.onChange(opt ? opt.value : '')}
+            placeholder="— Top Level —"
+            isClearable
+            isLoading={flatMenusLoading}
+          />
+        )}
+      />
       <Input
         label="Order"
         type="number"

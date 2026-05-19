@@ -48,4 +48,15 @@ class ApiResponse
             ],
         ]);
     }
+
+    public static function tryCatch(callable $fn): JsonResponse
+    {
+        try {
+            return $fn();
+        } catch (\InvalidArgumentException $e) {
+            return static::error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            return static::error('Terjadi kesalahan pada server.', 500);
+        }
+    }
 }

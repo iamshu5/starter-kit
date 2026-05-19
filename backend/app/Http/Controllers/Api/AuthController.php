@@ -15,22 +15,18 @@ class AuthController extends Controller
 {
     public function register(RegisterRequest $request, AuthService $authService): JsonResponse
     {
-        try {
+        return ApiResponse::tryCatch(function () use ($request, $authService) {
             $authService->register($request->validated());
             return ApiResponse::success(null, 'Registrasi berhasil. Akun Anda menunggu aktivasi dari Admin.', 201);
-        } catch (\InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        });
     }
 
     public function login(LoginRequest $request, AuthService $authService): JsonResponse
     {
-        try {
+        return ApiResponse::tryCatch(function () use ($request, $authService) {
             $result = $authService->login($request->validated());
             return ApiResponse::success($result, 'Login successful');
-        } catch (\InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        });
     }
 
     public function logout(Request $request, AuthService $authService): JsonResponse
@@ -53,11 +49,9 @@ class AuthController extends Controller
 
     public function updateProfile(UpdateProfileRequest $request, AuthService $authService): JsonResponse
     {
-        try {
+        return ApiResponse::tryCatch(function () use ($request, $authService) {
             $user = $authService->updateProfile($request->user(), $request->validated());
             return ApiResponse::success($user, 'Profil berhasil diperbarui');
-        } catch (\InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 422);
-        }
+        });
     }
 }

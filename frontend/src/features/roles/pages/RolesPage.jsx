@@ -4,139 +4,18 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, Plus, Settings2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { rolesApi } from '@/services/api/roles'
-import { menusApi } from '@/services/api/menus'
 import { DataTable, Pagination } from '@/components/ui/DataTable'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { FormModal } from '@/components/ui/FormModal'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { RoleForm } from '@/features/roles/components/RoleForm'
+import { RoleAssignModal } from '@/features/roles/components/RoleAssignModal'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toastMsg } from '@/utils/toastMsg'
 
 const col = createColumnHelper()
-
-function AssignModal({ role, onClose }) {
-  const qc = useQueryClient()
-  const [tab, setTab] = useState('permissions')
-
-  const { data: roleDetail } = useQuery({
-    queryKey: ['roles', role.id],
-    queryFn: () => rolesApi.get(role.id).then((r) => r.data.data),
-    enabled: !!role,
-  })
-
-  const { data: allPermissions } = useQuery({
-    queryKey: ['permissions'],
-    queryFn: () => rolesApi.permissions().then((r) => {
-      const d = r.data?.data
-      return Array.isArray(d) ? d : []
-    }),
-  })
-
-  const { data: allMenus } = useQuery({
-    queryKey: ['menus', 'flat'],
-    queryFn: () => menusApi.flat().then((r) => {
-      const d = r.data?.data
-      return Array.isArray(d) ? d : []
-    }),
-  })
-
-  const [selectedPerms, setSelectedPerms] = useState(null)
-  const [selectedMenus, setSelectedMenus] = useState(null)
-
-  const currentPerms = selectedPerms ?? (roleDetail?.permissions?.map((p) => p.id) || [])
-  const currentMenus = selectedMenus ?? (roleDetail?.menus?.map((m) => m.id) || [])
-
-  const syncPermMutation = useMutation({
-    mutationFn: () => rolesApi.syncPermissions(role.id, { permission_ids: currentPerms }),
-    onSuccess: () => { toast.success('Permissions saved.'); qc.invalidateQueries({ queryKey: ['roles'] }); onClose() },
-    onError: (e) => toast.error(toastMsg(e)),
-  })
-
-  const syncMenuMutation = useMutation({
-    mutationFn: () => rolesApi.syncMenus(role.id, { menu_ids: currentMenus }),
-    onSuccess: () => { toast.success('Menus saved.'); qc.invalidateQueries({ queryKey: ['roles', role.id] }); onClose() },
-    onError: (e) => toast.error(toastMsg(e)),
-  })
-
-  function togglePerm(id) {
-    setSelectedPerms((prev) => {
-      const list = prev ?? currentPerms
-      return list.includes(id) ? list.filter((x) => x !== id) : [...list, id]
-    })
-  }
-
-  function toggleMenu(id) {
-    setSelectedMenus((prev) => {
-      const list = prev ?? currentMenus
-      return list.includes(id) ? list.filter((x) => x !== id) : [...list, id]
-    })
-  }
-
-  return (
-    <Modal open onClose={onClose} title={`Assign — ${role.name}`} size="lg" footer={
-      <>
-        <Button variant="ghost" onClick={onClose}>Close</Button>
-        <Button
-          loading={syncPermMutation.isPending || syncMenuMutation.isPending}
-          onClick={() => tab === 'permissions' ? syncPermMutation.mutate() : syncMenuMutation.mutate()}
-        >
-          Save {tab === 'permissions' ? 'Permissions' : 'Menus'}
-        </Button>
-      </>
-    }>
-      {/* Tabs */}
-      <div className="flex border-b border-[#dde2ee] mb-4">
-        {['permissions', 'menus'].map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-[12px] font-medium border-b-2 -mb-px transition-colors capitalize
-              ${tab === t ? 'text-navy border-gold' : 'text-[#9aa0b8] border-transparent hover:text-[#5a6380]'}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'permissions' && (
-        <div className="grid grid-cols-2 gap-2">
-          {(Array.isArray(allPermissions) ? allPermissions : []).map((p) => (
-            <label key={p.id} className="flex items-center gap-2 p-2.5 rounded-lg border border-[#dde2ee] cursor-pointer hover:bg-navy-light/50 transition-colors">
-              <input
-                type="checkbox"
-                className="accent-navy"
-                checked={currentPerms.includes(p.id)}
-                onChange={() => togglePerm(p.id)}
-              />
-              <div>
-                <div className="text-[12px] font-medium text-[#1a1f2e]">{p.name}</div>
-                <div className="text-[10px] text-[#9aa0b8] font-mono">{p.slug}</div>
-              </div>
-            </label>
-          ))}
-        </div>
-      )}
-
-      {tab === 'menus' && (
-        <div className="grid grid-cols-2 gap-2">
-          {(Array.isArray(allMenus) ? allMenus : []).map((m) => (
-            <label key={m.id} className="flex items-center gap-2 p-2.5 rounded-lg border border-[#dde2ee] cursor-pointer hover:bg-navy-light/50 transition-colors">
-              <input
-                type="checkbox"
-                className="accent-navy"
-                checked={currentMenus.includes(m.id)}
-                onChange={() => toggleMenu(m.id)}
-              />
-              <div className="text-[12px] font-medium text-[#1a1f2e]">{m.name}</div>
-            </label>
-          ))}
-        </div>
-      )}
-    </Modal>
-  )
-}
 
 export function RolesPage() {
   const qc = useQueryClient()
@@ -270,49 +149,33 @@ export function RolesPage() {
       </div>
 
       {/* Create / Edit Modal */}
-      {modal && (
-        <Modal
-          open
+      <FormModal modal={modal} entityLabel="Role" onClose={() => setModal(null)}>
+        <RoleForm
+          role={modal?.role}
+          loading={createMutation.isPending || updateMutation.isPending}
           onClose={() => setModal(null)}
-          title={modal.mode === 'edit' ? 'Edit Role' : 'Add Role'}
-          size="lg"
-        >
-          <RoleForm
-            role={modal.role}
-            loading={createMutation.isPending || updateMutation.isPending}
-            onClose={() => setModal(null)}
-            onSubmit={(v) => modal.mode === 'edit'
-              ? updateMutation.mutate({ id: modal.role.id, v })
-              : createMutation.mutate(v)
-            }
-          />
-        </Modal>
-      )}
+          onSubmit={(v) => modal?.mode === 'edit'
+            ? updateMutation.mutate({ id: modal.role.id, v })
+            : createMutation.mutate(v)
+          }
+        />
+      </FormModal>
 
       {/* Assign permissions / menus */}
-      {assigning && <AssignModal role={assigning} onClose={() => setAssigning(null)} />}
+      {assigning && <RoleAssignModal role={assigning} onClose={() => setAssigning(null)} />}
 
       {/* Delete confirm */}
-      {deleting && (
-        <Modal
-          open
-          onClose={() => setDeleting(null)}
-          title="Delete Role"
-          size="sm"
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setDeleting(null)}>Close</Button>
-              <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleting.id)}>
-                Delete
-              </Button>
-            </>
-          }
-        >
-          <p className="text-[13px] text-[#5a6380]">
-            Delete role <strong>{deleting.name}</strong>? Users dengan role tersebut tidak bisa akses website ini.
-          </p>
-        </Modal>
-      )}
+      <ConfirmDeleteModal
+        open={!!deleting}
+        title="Delete Role"
+        onClose={() => setDeleting(null)}
+        onConfirm={() => deleteMutation.mutate(deleting.id)}
+        isLoading={deleteMutation.isPending}
+      >
+        <p className="text-[13px] text-[#5a6380]">
+          Delete role <strong>{deleting?.name}</strong>? Users dengan role tersebut tidak bisa akses website ini.
+        </p>
+      </ConfirmDeleteModal>
     </div>
   )
 }

@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { authApi } from '@/services/api/auth'
 import { Button } from '@/components/ui/Button'
+import { tryCatch } from '@/services/api/tryCatch'
 import { toastMsg } from '@/utils/toastMsg'
+
+const MAX_ATTEMPTS = 10
+const LOCKOUT_SECONDS = 30
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -13,20 +17,41 @@ export function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [done, setDone] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm()
+  // protek Brute force
+  const [attempts, setAttempts]  = useState(0)
+  const [countdown, setCountdown] = useState(0)
+  const isLocked = countdown > 0
+
+  useEffect(() => {
+    if (!isLocked) return
+    const timer = setInterval(() => {
+      setCountdown((s) => {
+        if (s <= 1) { setAttempts(0); return 0 }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [isLocked])
+
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm()
 
   async function onSubmit(values) {
-    try {
-      await authApi.register(values)
-      setDone(true)
-    } catch (err) {
-      toast.error(toastMsg(err))
-    }
+    if (isLocked) return
+    const result = await tryCatch(
+      () => authApi.register(values),
+      (err) => {
+        const next = attempts + 1
+        if (next >= MAX_ATTEMPTS) {
+          setAttempts(0)
+          setCountdown(LOCKOUT_SECONDS)
+          toast.error(`Terlalu banyak percobaan. Coba lagi dalam ${LOCKOUT_SECONDS} detik.`)
+        } else {
+          setAttempts(next)
+          toast.error(toastMsg(err))
+        }
+      },
+    )
+    if (result) setDone(true)
   }
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -51,9 +76,9 @@ export function RegisterPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-[28px] font-bold text-[#1a1f2e] mb-1.5">Buat Akun</h1>
+              <h1 className="text-[28px] font-bold text-[#1a1f2e] mb-1.5">Sign Up</h1>
               <p className="text-[13px] text-[#5a6380] mb-8">
-                Isi form register.
+                Silahkan isi form.
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -167,8 +192,14 @@ export function RegisterPage() {
                   {errors.password_confirmation && <p className="mt-1 text-[11px] text-red-500">{errors.password_confirmation.message}</p>}
                 </div>
 
-                <Button type="submit" className="w-full justify-center mt-1" loading={isSubmitting} disabled={isSubmitting} size="lg">
-                  Daftar
+                <Button 
+                  type="submit" 
+                  className="w-full justify-center mt-1" 
+                  loading={isSubmitting} 
+                  disabled={isSubmitting || isLocked} 
+                  size="lg"
+                >
+                  {isLocked ? `Tunggu ${countdown}s...` : 'Sign Up'}
                 </Button>
               </form>
 

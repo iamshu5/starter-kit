@@ -15,36 +15,42 @@ class UserController extends Controller
 {
     public function index(Request $request, UserService $userService): JsonResponse
     {
-        $users = $userService->paginate(
-            perPage: (int) $request->get('per_page', 15),
-            search:  $request->get('search'),
-            sortBy:  $request->get('sort_by', 'created_at'),
-            sortDir: $request->get('sort_dir', 'desc'),
+        return ApiResponse::tryCatch(fn() =>
+            ApiResponse::paginated($userService->paginate(
+                perPage: (int) $request->get('per_page', 15),
+                search:  $request->get('search'),
+                sortBy:  $request->get('sort_by', 'created_at'),
+                sortDir: $request->get('sort_dir', 'desc'),
+            ))
         );
-
-        return ApiResponse::paginated($users);
     }
 
     public function store(StoreUserRequest $request, UserService $userService): JsonResponse
     {
-        $user = $userService->create($request->validated());
-        return ApiResponse::success($user->load('role'), 'User created successfully', 201);
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($userService->create($request->validated())->load('role'), 'User created successfully', 201)
+        );
     }
 
     public function show(User $user): JsonResponse
     {
-        return ApiResponse::success($user->load('role'));
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($user->load('role'))
+        );
     }
 
     public function update(UpdateUserRequest $request, User $user, UserService $userService): JsonResponse
     {
-        $user = $userService->update($user, $request->validated());
-        return ApiResponse::success($user, 'User updated successfully');
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($userService->update($user, $request->validated()), 'User updated successfully')
+        );
     }
 
     public function destroy(User $user, UserService $userService): JsonResponse
     {
-        $userService->delete($user);
-        return ApiResponse::success(null, 'User deleted successfully');
+        return ApiResponse::tryCatch(function () use ($user, $userService) {
+            $userService->delete($user);
+            return ApiResponse::success(null, 'User deleted successfully');
+        });
     }
 }

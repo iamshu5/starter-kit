@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component {
             </svg>
           </div>
           <p className="text-[13px] font-semibold text-[#1a1f2e] mb-1">Terjadi kesalahan</p>
-          <p className="text-[11px] text-[#9aa0b8] mb-4">{this.state.error?.message || 'Unknown error'}</p>
+          {/* <p className="text-[11px] text-[#9aa0b8] mb-4">{this.state.error?.message || 'Unknown error'}</p> */}
           <button
             onClick={this.handleReset}
             className="px-3 py-1.5 text-[11px] font-medium rounded-md border border-[#dde2ee] bg-white text-[#5a6380] hover:bg-[#f7f8fc] transition-colors"

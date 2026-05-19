@@ -23,7 +23,7 @@ function getAllRoutes(items) {
 }
 
 export function ProtectedRoute() {
-  const token        = useAuthStore((s) => s.token)
+  const token = useAuthStore((s) => s.token)
   const hasHydrated  = useAuthStore((s) => s._hasHydrated)
 
   if (!hasHydrated) 
@@ -36,7 +36,7 @@ export function ProtectedRoute() {
 }
 
 export function GuestRoute() {
-  const token        = useAuthStore((s) => s.token)
+  const token = useAuthStore((s) => s.token)
   const hasHydrated  = useAuthStore((s) => s._hasHydrated)
 
   if (!hasHydrated) return <HydrationLoader />

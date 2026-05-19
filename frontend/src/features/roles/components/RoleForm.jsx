@@ -8,6 +8,7 @@ export function RoleForm({ role, onSubmit, onClose, loading }) {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm()
 
@@ -32,10 +33,7 @@ export function RoleForm({ role, onSubmit, onClose, loading }) {
         {...register('name', {
           required: 'Name is required.',
           onChange: (e) => {
-            if (!role) {
-              const slugEl = document.querySelector('[name=slug]')
-              if (slugEl) slugEl.value = autoSlug(e.target.value)
-            }
+            if (!role) setValue('slug', autoSlug(e.target.value))
           },
         })}
       />

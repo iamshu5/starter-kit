@@ -2,17 +2,21 @@ import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { rolesApi } from '@/services/api/roles'
-import { Input, Select, Toggle } from '@/components/ui/Input'
+import { Input, Toggle } from '@/components/ui/Input'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Button } from '@/components/ui/Button'
 
 export function UserForm({ user, onSubmit, onClose, loading }) {
-  const { data: rolesData } = useQuery({
-    queryKey: ['roles'],
+  const { data: rolesData, isLoading: rolesLoading } = useQuery({
+    queryKey: ['roles', 'all'],
     queryFn: () => rolesApi.list().then((r) => {
       const d = r.data?.data
       return Array.isArray(d) ? d : []
     }),
+    staleTime: 5 * 60 * 1000,
   })
+
+  const roleOptions = (rolesData || []).map((r) => ({ value: r.id, label: r.name }))
 
   const {
     register,
@@ -41,20 +45,20 @@ export function UserForm({ user, onSubmit, onClose, loading }) {
     <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
       <Input
         label="Full Name"
-        placeholder="John Doe"
+        placeholder="Masukan Nama Lengkap"
         error={errors.name?.message}
         {...register('name', { required: 'Name is required.' })}
       />
       <Input
         label="Username"
-        placeholder="johndoe"
+        placeholder="Masukan Username"
         error={errors.username?.message}
         {...register('username', { required: 'Username is required.' })}
       />
       <Input
         label="Email"
         type="email"
-        placeholder="john@example.com"
+        placeholder="Masukan Email"
         error={errors.email?.message}
         {...register('email', { required: 'Email is required.' })}
       />
@@ -71,16 +75,22 @@ export function UserForm({ user, onSubmit, onClose, loading }) {
           },
         })}
       />
-      <Select
-        label="Role"
-        error={errors.role_id?.message}
-        {...register('role_id')}
-      >
-        <option value="">— No Role —</option>
-        {(Array.isArray(rolesData) ? rolesData : []).map((r) => (
-          <option key={r.id} value={r.id}>{r.name}</option>
-        ))}
-      </Select>
+      <Controller
+        name="role_id"
+        control={control}
+        render={({ field }) => (
+          <SearchableSelect
+            label="Role"
+            error={errors.role_id?.message}
+            options={roleOptions}
+            value={roleOptions.find((o) => String(o.value) === String(field.value)) || null}
+            onChange={(opt) => field.onChange(opt ? opt.value : '')}
+            placeholder="— No Role —"
+            isClearable
+            isLoading={rolesLoading}
+          />
+        )}
+      />
       <Controller
         name="is_active"
         control={control}

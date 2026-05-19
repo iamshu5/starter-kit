@@ -1,62 +1,49 @@
 import { useMemo, useState } from 'react'
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { createColumnHelper } from '@tanstack/react-table'
-import { Pencil, Trash2, Plus, Search } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { menusApi } from '@/services/api/menus'
-import { DataTable, Pagination } from '@/components/ui/DataTable'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
-import { SvgIcon } from '@/components/ui/SvgIcon'
+import { FormModal } from '@/components/ui/FormModal'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { MenuForm } from '@/features/menus/components/MenuForm'
-import { useDebounce } from '@/hooks/useDebounce'
+import { MenuTreeView } from '@/features/menus/components/MenuTreeView'
 import { toastMsg } from '@/utils/toastMsg'
-
-const col = createColumnHelper()
 
 export function MenusPage() {
   const qc = useQueryClient()
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState('order')
-  const [sortDir, setSortDir] = useState('asc')
   const [modal, setModal] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
-  const debouncedSearch = useDebounce(search, 400)
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['menus', 'list', { page, search: debouncedSearch, sortBy, sortDir }],
-    queryFn: () => menusApi.list({ page, search: debouncedSearch || undefined, per_page: 15, sort_by: sortBy, sort_dir: sortDir }).then((r) => r.data),
-    placeholderData: keepPreviousData,
+  const { data: flatMenus = [], isLoading, isError } = useQuery({
+    queryKey: ['menus', 'flat'],
+    queryFn: () => menusApi.flat().then((r) => Array.isArray(r.data?.data) ? r.data.data : []),
+    staleTime: 5 * 60 * 1000,
   })
 
-  function handleSort(column) {
-    if (sortBy === column) {
-      setSortDir((d) => d === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(column)
-      setSortDir('asc')
-    }
-    setPage(1)
-  }
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return flatMenus
+    const matchIds = new Set()
+    flatMenus.forEach((m) => {
+      if (m.name.toLowerCase().includes(q) || (m.route || '').toLowerCase().includes(q)) {
+        matchIds.add(m.id)
+        if (m.parent_id) matchIds.add(m.parent_id)
+      }
+    })
+    return flatMenus.filter((m) => matchIds.has(m.id))
+  }, [flatMenus, search])
 
   const createMutation = useMutation({
-    mutationFn: async (v) => {
-      const res = await menusApi.create({ ...v, is_active: Boolean(v.is_active), parent_id: v.parent_id || null })
-      return res
-    },
+    mutationFn: (v) => menusApi.create({ ...v, is_active: Boolean(v.is_active), parent_id: v.parent_id || null }),
     onSuccess: () => { toast.success('Menu created.'); qc.invalidateQueries({ queryKey: ['menus'] }); setModal(null) },
     onError: (e) => toast.error(toastMsg(e)),
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, v }) => {
-      const res = await menusApi.update(id, { ...v, is_active: Boolean(v.is_active), parent_id: v.parent_id || null })
-      return res
-    },
+    mutationFn: ({ id, v }) => menusApi.update(id, { ...v, is_active: Boolean(v.is_active), parent_id: v.parent_id || null }),
     onSuccess: () => { toast.success('Menu updated.'); qc.invalidateQueries({ queryKey: ['menus'] }); setModal(null) },
     onError: (e) => toast.error(toastMsg(e)),
   })
@@ -67,63 +54,28 @@ export function MenusPage() {
     onError: (e) => toast.error(toastMsg(e)),
   })
 
-  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
+  async function handleReorder(groupId, newIdOrder) {
+    const parentId = groupId === 'root' ? null : Number(groupId)
+    try {
+      await Promise.all(
+        newIdOrder.map((strId, idx) => {
+          const id = Number(strId)
+          const full = flatMenus.find((m) => m.id === id)
+          return menusApi.update(id, { ...full, order: idx + 1, parent_id: parentId })
+        })
+      )
+      qc.invalidateQueries({ queryKey: ['menus'] })
+    } catch (e) {
+      toast.error(toastMsg(e))
+      qc.invalidateQueries({ queryKey: ['menus'] })
+    }
+  }
 
-  const columns = useMemo(() => [
-    col.accessor('order', {
-      header: 'Urutan',
-      cell: (i) => <span className="font-mono text-[11px] text-[#9aa0b8]">{i.getValue()}</span>,
-    }),
-    col.accessor('icon', {
-      header: 'Icon',
-      cell: (i) => <SvgIcon icon={i.getValue()} size={16} className="text-[#5a6380]" />,
-    }),
-    col.accessor('name', {
-      header: 'Name',
-      meta: { sortable: true },
-      cell: (i) => <span className="font-medium text-navy">{i.getValue()}</span>,
-    }),
-    col.accessor('slug', {
-      header: 'Slug',
-      meta: { sortable: true },
-      cell: (i) => <span className="font-mono text-[11px] text-[#5a6380]">{i.getValue()}</span>,
-    }),
-    col.accessor('route', {
-      header: 'Route',
-      meta: { sortable: true },
-      cell: (i) => <span className="font-mono text-[11px] text-[#5a6380]">{i.getValue() || '—'}</span>,
-    }),
-    col.accessor('parent_id', {
-      header: 'Parent',
-      cell: (i) => i.getValue()
-        ? <Badge color="gray">{i.row.original.parent?.name || `#${i.getValue()}`}</Badge>
-        : <span className="text-[#9aa0b8]">Top Level</span>,
-    }),
-    col.accessor('is_active', {
-      header: 'Status',
-      cell: (i) => <Badge color={i.getValue() ? 'green' : 'red'}>{i.getValue() ? 'Active' : 'Inactive'}</Badge>,
-    }),
-    col.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="gold" onClick={() => setModal({ mode: 'edit', menu: row.original })}>
-            <Pencil size={11} />
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => setDeleting(row.original)}>
-            <Trash2 size={11} />
-          </Button>
-        </div>
-      ),
-    }),
-  ], [])
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
 
   return (
     <div>
-      {isMutating && (
-        <div className="fixed inset-0 z-60 cursor-wait" />
-      )}
+      {isMutating && <div className="fixed inset-0 z-60 cursor-wait" />}
 
       <PageHeader
         title="Menus"
@@ -140,69 +92,52 @@ export function MenusPage() {
           <div className="relative">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9aa0b8]" />
             <input
-              className="pl-7 pr-3 py-1.5 text-[12px] border border-[#dde2ee] rounded-md outline-none focus:border-navy-3 w-52"
+              className="pl-7 pr-3 py-1.5 text-[12px] border border-[#dde2ee] rounded-md outline-none focus:border-navy w-52"
               placeholder="Search menus..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
+
         {isError
           ? <div className="py-10 text-center text-[12px] text-[#e05252]">Gagal memuat data. Silakan muat ulang halaman.</div>
-          : <>
-              <DataTable
-                columns={columns}
-                data={data?.data || []}
-                loading={isLoading}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={handleSort}
-                rowOffset={(page - 1) * 15}
-                mutating={isMutating}
-              />
-              <Pagination meta={data?.meta} onPageChange={setPage} disabled={isMutating} />
-            </>}
+          : (
+            <MenuTreeView
+              menus={filtered}
+              loading={isLoading}
+              onEdit={(menu) => setModal({ mode: 'edit', menu })}
+              onDelete={setDeleting}
+              onReorder={handleReorder}
+              disabled={isMutating || !!search.trim()}
+            />
+          )
+        }
       </div>
 
-      {modal && (
-        <Modal
-          open
+      <FormModal modal={modal} entityLabel="Menu" onClose={() => setModal(null)}>
+        <MenuForm
+          menu={modal?.menu}
+          loading={createMutation.isPending || updateMutation.isPending}
           onClose={() => setModal(null)}
-          title={modal.mode === 'edit' ? 'Edit Menu' : 'Add Menu'}
-          size="lg"
-        >
-          <MenuForm
-            menu={modal.menu}
-            loading={createMutation.isPending || updateMutation.isPending}
-            onClose={() => setModal(null)}
-            onSubmit={(v) => modal.mode === 'edit'
-              ? updateMutation.mutate({ id: modal.menu.id, v })
-              : createMutation.mutate(v)
-            }
-          />
-        </Modal>
-      )}
-
-      {deleting && (
-        <Modal
-          open
-          onClose={() => setDeleting(null)}
-          title="Delete Menu"
-          size="sm"
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setDeleting(null)}>Cancel</Button>
-              <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleting.id)}>
-                Delete
-              </Button>
-            </>
+          onSubmit={(v) => modal?.mode === 'edit'
+            ? updateMutation.mutate({ id: modal.menu.id, v })
+            : createMutation.mutate(v)
           }
-        >
-          <p className="text-[13px] text-[#5a6380]">
-            Delete menu <strong>{deleting.name}</strong>?
-          </p>
-        </Modal>
-      )}
+        />
+      </FormModal>
+
+      <ConfirmDeleteModal
+        open={!!deleting}
+        title="Delete Menu"
+        onClose={() => setDeleting(null)}
+        onConfirm={() => deleteMutation.mutate(deleting.id)}
+        isLoading={deleteMutation.isPending}
+      >
+        <p className="text-[13px] text-[#5a6380]">
+          Delete menu <strong>{deleting?.name}</strong>?
+        </p>
+      </ConfirmDeleteModal>
     </div>
   )
 }

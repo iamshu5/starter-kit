@@ -7,6 +7,8 @@ import { Eye, EyeOff } from 'lucide-react'
 import { authApi } from '@/services/api/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/Button'
+import { tryCatch } from '@/services/api/tryCatch'
+import { toastMsg } from '@/utils/toastMsg'
 
 const MAX_ATTEMPTS = 10
 const LOCKOUT_SECONDS = 30
@@ -37,22 +39,25 @@ export function LoginPage() {
 
   async function onSubmit(values) {
     if (isLocked) return
-    try {
-      const { data } = await authApi.login(values)
-      queryClient.clear()
-      setAuth(data.data.user, data.data.token)
-      navigate('/dashboard', { replace: true })
-    } catch (err) {
-      const next = attempts + 1
-      if (next >= MAX_ATTEMPTS) {
-        setAttempts(0)
-        setCountdown(LOCKOUT_SECONDS)
-        toast.error(`Terlalu banyak percobaan. Coba lagi dalam ${LOCKOUT_SECONDS} detik.`)
-      } else {
-        setAttempts(next)
-        toast.error(err.response?.data?.message || 'Login gagal. Silakan coba lagi.')
-      }
-    }
+    const result = await tryCatch(
+      () => authApi.login(values),
+      (err) => {
+        const next = attempts + 1
+        if (next >= MAX_ATTEMPTS) {
+          setAttempts(0)
+          setCountdown(LOCKOUT_SECONDS)
+          toast.error(`Terlalu banyak percobaan. Coba lagi dalam ${LOCKOUT_SECONDS} detik.`)
+        } else {
+          setAttempts(next)
+          toast.error(toastMsg(err))
+        }
+      },
+    )
+
+    if (!result) return
+    queryClient.clear()
+    setAuth(result.data.data.user, result.data.data.token)
+    navigate('/dashboard', { replace: true })
   }
 
   return (
@@ -70,7 +75,7 @@ export function LoginPage() {
               </label>
               <input
                 type="text"
-                placeholder="admin@example.com"
+                placeholder="admin / admin@example.com"
                 autoComplete="username"
                 autoFocus
                 disabled={isSubmitting}

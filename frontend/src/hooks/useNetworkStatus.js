@@ -42,7 +42,7 @@ export function useNetworkStatus() {
     const init = setTimeout(measure, 1500)
     const interval = setInterval(measure, POLL_MS)
 
-    window.addEventListener('online',  onOnline)
+    window.addEventListener('online', onOnline)
     window.addEventListener('offline', onOffline)
     document.addEventListener('visibilitychange', onVisible)
 
@@ -50,7 +50,7 @@ export function useNetworkStatus() {
       active = false
       clearTimeout(init)
       clearInterval(interval)
-      window.removeEventListener('online',  onOnline)
+      window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
       document.removeEventListener('visibilitychange', onVisible)
     }

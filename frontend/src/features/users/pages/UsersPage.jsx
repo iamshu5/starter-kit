@@ -4,11 +4,13 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Pencil, Trash2, Plus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { usersApi } from '@/services/api/users'
+import { rolesApi } from '@/services/api/roles'
 import { DataTable, Pagination } from '@/components/ui/DataTable'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { FormModal } from '@/components/ui/FormModal'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { UserForm } from '@/features/users/components/UserForm'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toastMsg } from '@/utils/toastMsg'
@@ -25,6 +27,12 @@ export function UsersPage() {
   const [deleting, setDeleting] = useState(null)
 
   const debouncedSearch = useDebounce(search, 400)
+
+  useQuery({
+    queryKey: ['roles', 'all'],
+    queryFn: () => rolesApi.list().then((r) => Array.isArray(r.data?.data) ? r.data.data : []),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['users', { page, search: debouncedSearch, sortBy, sortDir }],
@@ -158,49 +166,33 @@ export function UsersPage() {
       </div>
 
       {/* Create / Edit Modal*/}
-      {modal && (
-        <Modal
-          open
+      <FormModal modal={modal} entityLabel="User" onClose={() => setModal(null)}>
+        <UserForm
+          user={modal?.user}
+          loading={createMutation.isPending || updateMutation.isPending}
           onClose={() => setModal(null)}
-          title={modal.mode === 'edit' ? 'Edit User' : 'Add User'}
-          size="lg"
-        >
-          <UserForm
-            user={modal.user}
-            loading={createMutation.isPending || updateMutation.isPending}
-            onClose={() => setModal(null)}
-            onSubmit={(values) => {
-              if (modal.mode === 'edit') {
-                updateMutation.mutate({ id: modal.user.id, values })
-              } else {
-                createMutation.mutate(values)
-              }
-            }}
-          />
-        </Modal>
-      )}
+          onSubmit={(values) => {
+            if (modal?.mode === 'edit') {
+              updateMutation.mutate({ id: modal.user.id, values })
+            } else {
+              createMutation.mutate(values)
+            }
+          }}
+        />
+      </FormModal>
 
       {/* Delete */}
-      {deleting && (
-        <Modal
-          open
-          onClose={() => setDeleting(null)}
-          title="Delete User"
-          size="sm"
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setDeleting(null)}>Close</Button>
-              <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleting.id)}>
-                Delete
-              </Button>
-            </>
-          }
-        >
-          <p className="text-[13px] text-[#5a6380]">
-            Apakah Anda yakin ingin hapus <strong>{deleting.name}</strong>?
-          </p>
-        </Modal>
-      )}
+      <ConfirmDeleteModal
+        open={!!deleting}
+        title="Delete User"
+        onClose={() => setDeleting(null)}
+        onConfirm={() => deleteMutation.mutate(deleting.id)}
+        isLoading={deleteMutation.isPending}
+      >
+        <p className="text-[13px] text-[#5a6380]">
+          Apakah Anda yakin ingin hapus <strong>{deleting?.name}</strong>?
+        </p>
+      </ConfirmDeleteModal>
     </div>
   )
 }

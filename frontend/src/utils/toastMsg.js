@@ -4,7 +4,7 @@ export function toastMsg(e) {
   }
 
   if (!e?.response) {
-    return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+    return 'Tidak dapat terhubung ke server.'
   }
 
   const status = e.response.status

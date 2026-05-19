@@ -204,7 +204,12 @@ class UpdateProductRequest extends FormRequest
 
 ### Step 5 — Controller
 
-Buat `backend/app/Http/Controllers/Api/ProductController.php`:
+Buat `backend/app/Http/Controllers/Api/ProductController.php`.
+
+> **Pola wajib:** Setiap method dibungkus `ApiResponse::tryCatch()` agar semua exception
+> (dari service maupun DB) selalu menghasilkan response JSON yang terformat.
+> - `InvalidArgumentException` dari service → 422
+> - Exception lain (DB error, dsb) → 500
 
 ```php
 <?php
@@ -224,37 +229,43 @@ class ProductController extends Controller
 {
     public function index(Request $request, ProductService $productService): JsonResponse
     {
-        $products = $productService->paginate(
-            perPage: (int) $request->get('per_page', 15),
-            search:  $request->get('search'),
-            sortBy:  $request->get('sort_by', 'created_at'),
-            sortDir: $request->get('sort_dir', 'desc'),
+        return ApiResponse::tryCatch(fn() =>
+            ApiResponse::paginated($productService->paginate(
+                perPage: (int) $request->get('per_page', 15),
+                search:  $request->get('search'),
+                sortBy:  $request->get('sort_by', 'created_at'),
+                sortDir: $request->get('sort_dir', 'desc'),
+            ))
         );
-
-        return ApiResponse::paginated($products);
     }
 
     public function store(StoreProductRequest $request, ProductService $productService): JsonResponse
     {
-        $product = $productService->create($request->validated());
-        return ApiResponse::success($product, 'Product created successfully', 201);
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($productService->create($request->validated()), 'Product created successfully', 201)
+        );
     }
 
     public function show(Product $product): JsonResponse
     {
-        return ApiResponse::success($product);
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($product)
+        );
     }
 
     public function update(UpdateProductRequest $request, Product $product, ProductService $productService): JsonResponse
     {
-        $product = $productService->update($product, $request->validated());
-        return ApiResponse::success($product, 'Product updated successfully');
+        return ApiResponse::tryCatch(
+            fn() => ApiResponse::success($productService->update($product, $request->validated()), 'Product updated successfully')
+        );
     }
 
     public function destroy(Product $product, ProductService $productService): JsonResponse
     {
-        $productService->delete($product);
-        return ApiResponse::success(null, 'Product deleted successfully');
+        return ApiResponse::tryCatch(function () use ($product, $productService) {
+            $productService->delete($product);
+            return ApiResponse::success(null, 'Product deleted successfully');
+        });
     }
 }
 ```
@@ -432,7 +443,8 @@ import { DataTable, Pagination } from '@/components/ui/DataTable'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
+import { FormModal } from '@/components/ui/FormModal'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProductForm } from '@/features/products/components/ProductForm'
 import { useDebounce } from '@/hooks/useDebounce'
 import { toastMsg } from '@/utils/toastMsg'
@@ -539,9 +551,9 @@ export function ProductsPage() {
       </div>
 
       {modal && (
-        <Modal open onClose={() => setModal(null)} title={modal.mode === 'edit' ? 'Edit Product' : 'Add Product'} size="lg">
+        <FormModal modal={modal} entityLabel="Product" onClose={() => setModal(null)}>
           <ProductForm
-            product={modal.product}
+            product={modal?.product}
             loading={createMutation.isPending || updateMutation.isPending}
             onClose={() => setModal(null)}
             onSubmit={values => {
@@ -549,18 +561,18 @@ export function ProductsPage() {
               else createMutation.mutate(values)
             }}
           />
-        </Modal>
+        </FormModal>
       )}
 
-      {deleting && (
-        <Modal open onClose={() => setDeleting(null)} title="Delete Product" size="sm"
-          footer={<>
-            <Button variant="ghost" onClick={() => setDeleting(null)}>Close</Button>
-            <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleting.id)}>Delete</Button>
-          </>}>
-          <p className="text-[13px] text-[#5a6380]">Hapus <strong>{deleting.name}</strong>?</p>
-        </Modal>
-      )}
+      <ConfirmDeleteModal
+        open={!!deleting}
+        title="Delete Product"
+        onClose={() => setDeleting(null)}
+        onConfirm={() => deleteMutation.mutate(deleting.id)}
+        isLoading={deleteMutation.isPending}
+      >
+        <p className="text-[13px] text-[#5a6380]">Hapus <strong>{deleting?.name}</strong>?</p>
+      </ConfirmDeleteModal>
     </div>
   )
 }
@@ -784,23 +796,25 @@ public function create(array $data, ?\Illuminate\Http\UploadedFile $document = n
 ```php
 public function store(StoreProductRequest $request, ProductService $productService): JsonResponse
 {
-    $product = $productService->create(
-        $request->validated(),
-        $request->file('image')  // null jika user tidak pilih file
-    );
-
-    return ApiResponse::success($product, 'Product created successfully', 201);
+    return ApiResponse::tryCatch(function () use ($request, $productService) {
+        $product = $productService->create(
+            $request->validated(),
+            $request->file('image')  // null jika user tidak pilih file
+        );
+        return ApiResponse::success($product, 'Product created successfully', 201);
+    });
 }
 
 public function update(UpdateProductRequest $request, Product $product, ProductService $productService): JsonResponse
 {
-    $product = $productService->update(
-        $product,
-        $request->validated(),
-        $request->file('image')
-    );
-
-    return ApiResponse::success($product, 'Product updated successfully');
+    return ApiResponse::tryCatch(function () use ($request, $product, $productService) {
+        $product = $productService->update(
+            $product,
+            $request->validated(),
+            $request->file('image')
+        );
+        return ApiResponse::success($product, 'Product updated successfully');
+    });
 }
 ```
 
@@ -817,13 +831,14 @@ $request->file('document')  // sesuai nama field di FormRequest
 ```php
 public function store(StoreProductRequest $request, ProductService $productService): JsonResponse
 {
-    $product = $productService->create(
-        $request->validated(),
-        $request->file('image'),    // null jika tidak ada
-        $request->file('document')  // null jika tidak ada
-    );
-
-    return ApiResponse::success($product, 'Product created successfully', 201);
+    return ApiResponse::tryCatch(function () use ($request, $productService) {
+        $product = $productService->create(
+            $request->validated(),
+            $request->file('image'),    // null jika tidak ada
+            $request->file('document')  // null jika tidak ada
+        );
+        return ApiResponse::success($product, 'Product created successfully', 201);
+    });
 }
 ```
 

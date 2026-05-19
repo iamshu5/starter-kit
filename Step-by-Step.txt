@@ -1,48 +1,93 @@
 Step-by-Step: Tambah Halaman Baru & Menu/Sub Menu
-(Panduan lengkap ada di GUIDE-ADD-FEATURE.md)
+(Panduan lengkap + kode lengkap ada di GUIDE-ADD-FEATURE.md)
+(Dokumentasi arsitektur keseluruhan ada di APP-FLOW.md)
 
-A. Backend — Tambah Route
-Edit api.php:
-<?php
-Route::apiResource('products', ProductController::class);
+=== BACKEND ===
 
-B. Frontend — Tambah Halaman
-1. Buat file frontend/src/features/products/pages/ProductsPage.jsx
-2. Import dan daftarkan di src/App.jsx:
-import { ProductsPage } from '@/features/products/pages/ProductsPage'
+1. Migration
+   - Buat file di database/migrations/
+   - Kolom yang di-search → masukkan fullText()
+   - Kolom yang di-WHERE/ORDER → pasang ->index()
 
-// Di dalam <Route element={<PermittedRoute />}>:
-<Route path="/products" element={<ProductsPage />} />
+2. Model
+   - fillable, casts, relasi (belongsTo, dll)
+   - Jika ada file: accessor getXxxUrlAttribute() + $appends
 
-3. Tambahkan title di src/layouts/AppLayout.jsx:
-const titles = { ..., '/products': 'Products' }
+3. Service (app/Services/ProductService.php)
+   - use FullTextSearch trait
+   - paginate / create / update / delete
 
-4. Tambah data Permission di database (opsional — jika pakai permission guard).
+4. Form Requests (StoreProductRequest + UpdateProductRequest)
+   - Store: 'required'; Update: 'sometimes'
+   - Update unique: "unique:products,slug,{$productId}"
 
-POST /api/permissions
-{ "name": "View Products", "slug": "products.view" }
+5. Controller (app/Http/Controllers/Api/ProductController.php)
+   Semua method WAJIB dibungkus ApiResponse::tryCatch():
+   
+   public function store(StoreProductRequest $request, ProductService $service): JsonResponse
+   {
+       return ApiResponse::tryCatch(
+           fn() => ApiResponse::success($service->create($request->validated()), 'Created', 201)
+       );
+   }
 
-D. Jika Fitur Ada File Upload (foto/dokumen maks 5 MB)
-Lihat GUIDE-ADD-FEATURE.md Bagian 2 (Upload Step A–H) untuk langkah lengkap.
+6. Routes (routes/api.php) — dalam middleware('auth:sanctum'):
+   Route::prefix('/products')->group(function () {
+       Route::get('/',            [ProductController::class, 'index'])  ->middleware('permission:products.view');
+       Route::get('/{product}',   [ProductController::class, 'show'])   ->middleware('permission:products.view');
+       Route::post('/',           [ProductController::class, 'store'])  ->middleware('permission:products.create');
+       Route::put('/{product}',   [ProductController::class, 'update']) ->middleware('permission:products.update');
+       Route::patch('/{product}', [ProductController::class, 'update']) ->middleware('permission:products.update');
+       Route::delete('/{product}',[ProductController::class, 'destroy'])->middleware('permission:products.delete');
+   });
 
-Catatan penting yang sering salah:
-- max: di FormRequest, maxKb di FileService, maxKb di FileInput HARUS SAMA (5120)
-- FileService default = 2048 KB — wajib kirim maxKb: 5120 secara eksplisit
-- Untuk gambar: accept="image/jpeg,image/png,image/webp" + mimes:jpeg,png,webp
-- Untuk dokumen: accept=".pdf,.doc,.docx" + mimes:pdf,doc,docx
-- Accessor di Model gunakan: app(FileService::class)->url($this->xxx_path)
+7. Seeder
+   - Tambah permissions: products.view/create/update/delete
+   - Tambah menu entry
+   - Jalankan: php artisan migrate:fresh --seed
 
-C. Tambah Menu/Sub Menu via Admin Panel
-Login → buka halaman Menus
-Klik Add Menu:
-Name: Products
-Slug: products
-Route: /products
-Parent Menu: — Top Level — (atau pilih parent kalo mau jadi sub-menu)
-Order: nomor urut tampilan
-Icon: paste SVG dari heroicons.com
-Buka halaman Roles, klik ikon ⚙ pada role yang diinginkan -> tab Menus -> centang menu baru -> Save Menus.
+=== FRONTEND ===
 
-Melihat menu Products di sidebar
-Bisa mengakses /products (karena PermittedRoute cek dari sidebar API)
-User lain yang rolenya tidak dapat menu Products → redirect ke /dashboard
+8. services/api/products.js
+   export const productsApi = { list, get, create, update, remove }
+
+9. features/products/components/ProductForm.jsx
+   - react-hook-form; Toggle WAJIB pakai Controller (bukan register)
+
+10. features/products/pages/ProductsPage.jsx
+    - useQuery + 3 useMutation (create/update/delete)
+    - Import FormModal + ConfirmDeleteModal dari @/components/ui/ (REUSABLE — jangan buat per-fitur)
+    - <FormModal modal={modal} entityLabel="Product" onClose={...}><ProductForm /></FormModal>
+    - <ConfirmDeleteModal open={!!deleting} title="Delete Product" onClose={...} onConfirm={...} isLoading={...}>
+    - onError: (e) => toast.error(toastMsg(e))
+
+11. Daftarkan di App.jsx (lazy import + Route dalam PermittedRoute)
+
+12. Tambah judul di AppLayout.jsx:
+    const titles = { ..., '/products': 'Products' }
+
+=== TAMBAH MENU VIA ADMIN PANEL ===
+
+Login → halaman Menus → Add Menu:
+  Name: Products | Slug: products | Route: /products
+  Order: angka urut | Icon: SVG dari heroicons.com
+  Parent: Top Level (atau pilih parent untuk sub-menu)
+
+Roles → ikon ⚙ → tab Menus → centang menu baru → Save Menus
+→ User dengan role tersebut otomatis bisa akses /products di sidebar
+
+=== JIKA ADA FILE UPLOAD ===
+
+Lihat GUIDE-ADD-FEATURE.md Bagian 2 (Upload Step A–H).
+
+SINKRONISASI WAJIB — ketiga nilai ini harus SAMA:
+  max:5120         di FormRequest
+  maxKb: 5120      di FileService (wajib eksplisit!)
+  maxKb={5120}     di FileInput component
+
+Jenis file juga harus konsisten:
+  mimes:jpeg,png,webp            di FormRequest
+  ['image/jpeg','image/png',...]  di FileService allowed
+  accept="image/jpeg,..."        di FileInput
+
+Accessor di Model: app(FileService::class)->url($this->xxx_path)
